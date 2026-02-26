@@ -73,13 +73,22 @@
     transition-timing-function: var(--ds-easing-standard);
   }
   @media (max-width: 767px) {
-    input,
+    input[type='text'],
+    input[type='email'],
+    input[type='number'],
+    input[type='password'],
+    input[type='search'],
+    input[type='tel'],
+    input[type='url'],
+    input[type='date'],
+    input[type='time'],
+    input[type='datetime-local'],
     select,
     textarea {
-      font-size: 16px;
+      font-size: 16px !important;
     }
     .input-base {
-      font-size: 16px;
+      font-size: 16px !important;
     }
   }
   @media (prefers-reduced-motion: reduce) {

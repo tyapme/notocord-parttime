@@ -15,7 +15,6 @@ function FrameContent({
   footer,
   maxWidthClassName,
   bodyClassName,
-  mobile = false,
 }: {
   onClose: () => void;
   header: React.ReactNode;
@@ -24,15 +23,12 @@ function FrameContent({
   footer?: React.ReactNode;
   maxWidthClassName?: string;
   bodyClassName?: string;
-  mobile?: boolean;
 }) {
   return (
     <div
       className={cn(
-        mobile
-          ? "w-full overflow-hidden max-h-[92dvh] min-h-0 flex flex-col bg-[var(--surface-container-high)] border-t border-[var(--outline-variant)] rounded-t-[var(--ds-component-modal-corner-radius)] rounded-b-none shadow-[var(--ds-elevation-overlay)]"
-          : "modal-surface w-full overflow-hidden max-h-[92dvh] min-h-0 flex flex-col",
-        mobile ? "max-w-none" : (maxWidthClassName ?? "max-w-sm")
+        "w-full overflow-hidden max-h-[92dvh] min-h-0 flex flex-col",
+        maxWidthClassName ?? "max-w-sm"
       )}
     >
       <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
@@ -76,8 +72,8 @@ export function ShiftRequestModalFrame({
   if (isMobile) {
     return (
       <Drawer open onOpenChange={(open) => !open && onClose()}>
-        <DrawerContent className="data-[vaul-drawer-direction=bottom]:max-h-[92dvh] border-0 bg-transparent p-0 shadow-none">
-          <FrameContent onClose={onClose} header={header} status={status} footer={footer} bodyClassName={bodyClassName} mobile>
+        <DrawerContent className="data-[vaul-drawer-direction=bottom]:max-h-[92dvh] min-h-0 overflow-hidden rounded-t-[var(--ds-component-modal-corner-radius)] rounded-b-none border-t border-[var(--outline-variant)] bg-[var(--surface-container-high)] shadow-[var(--ds-elevation-overlay)]">
+          <FrameContent onClose={onClose} header={header} status={status} footer={footer} bodyClassName={bodyClassName} maxWidthClassName="max-w-none">
             {children}
           </FrameContent>
         </DrawerContent>
@@ -97,7 +93,7 @@ export function ShiftRequestModalFrame({
         header={header}
         status={status}
         footer={footer}
-        maxWidthClassName={maxWidthClassName}
+        maxWidthClassName={cn("modal-surface", maxWidthClassName)}
         bodyClassName={bodyClassName}
       >
         {children}
