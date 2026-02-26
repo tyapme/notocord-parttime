@@ -27,7 +27,7 @@ function FrameContent({
   return (
     <div
       className={cn(
-        "modal-surface w-full overflow-hidden max-h-[92dvh] flex flex-col",
+        "modal-surface w-full overflow-hidden max-h-[92dvh] min-h-0 flex flex-col",
         maxWidthClassName ?? "max-w-sm"
       )}
     >
@@ -41,7 +41,9 @@ function FrameContent({
         </div>
       </div>
 
-      <div className={cn("overflow-y-auto no-scrollbar flex-1", bodyClassName)}>{children}</div>
+      <div className={cn("overflow-y-auto no-scrollbar min-h-0 flex-1 pb-[max(env(safe-area-inset-bottom),0px)]", bodyClassName)}>
+        {children}
+      </div>
 
       {footer && <div className="px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] modal-divider shrink-0">{footer}</div>}
     </div>
@@ -70,19 +72,17 @@ export function ShiftRequestModalFrame({
   if (isMobile) {
     return (
       <Drawer open onOpenChange={(open) => !open && onClose()}>
-        <DrawerContent className="border-t border-[var(--outline-variant)] bg-transparent p-0 shadow-none">
-          <div className="mx-auto w-full max-w-[var(--ds-layout-max-content-width)] px-2 pb-2">
-            <FrameContent
-              onClose={onClose}
-              header={header}
-              status={status}
-              footer={footer}
-              maxWidthClassName="max-w-full"
-              bodyClassName={bodyClassName}
-            >
-              {children}
-            </FrameContent>
-          </div>
+        <DrawerContent className="data-[vaul-drawer-direction=bottom]:max-h-[92dvh] border-0 bg-transparent p-0 shadow-none">
+          <FrameContent
+            onClose={onClose}
+            header={header}
+            status={status}
+            footer={footer}
+            maxWidthClassName="max-w-none rounded-t-[var(--ds-component-modal-corner-radius)] rounded-b-none border-0"
+            bodyClassName={bodyClassName}
+          >
+            {children}
+          </FrameContent>
         </DrawerContent>
       </Drawer>
     );
