@@ -1,7 +1,8 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Geist_Mono, Zen_Kaku_Gothic_New } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
+import { PwaRegister } from '@/components/pwa-register'
 
 const zenKakuGothicNew = Zen_Kaku_Gothic_New({
   weight: "400",
@@ -15,6 +16,12 @@ export const metadata: Metadata = {
   title: '勤務申請',
   description: '勤務時間申請・承認管理システム',
   generator: 'v0.app',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    title: '勤務申請',
+    statusBarStyle: 'default',
+  },
   icons: {
     icon: [
       {
@@ -34,6 +41,13 @@ export const metadata: Metadata = {
   },
 }
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#325da8',
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -43,6 +57,7 @@ export default function RootLayout({
     <html lang="ja">
       <body className={`${zenKakuGothicNew.variable} ${_geistMono.variable} font-sans antialiased`}>
         {children}
+        <PwaRegister />
         <Analytics />
       </body>
     </html>

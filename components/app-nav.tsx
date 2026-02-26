@@ -6,6 +6,7 @@ import { useShallow } from "zustand/react/shallow";
 import { cn } from "@/lib/utils";
 import { Role } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CalendarDays, Clock3, Home, LogOut, Settings, Users } from "lucide-react";
 
 export type Tab = "home" | "attendance" | "shifts" | "my" | "new" | "review" | "proxy" | "users" | "admin";
 type TopNavId = "home" | "attendance" | "shift" | "users" | "settings";
@@ -62,6 +63,14 @@ function toTopNav(tab: Tab): TopNavId {
   return "shift";
 }
 
+function topIcon(id: TopNavId) {
+  if (id === "home") return Home;
+  if (id === "attendance") return Clock3;
+  if (id === "shift") return CalendarDays;
+  if (id === "users") return Users;
+  return Settings;
+}
+
 export function AppNav({ activeTab, onTabChange }: AppNavProps) {
   const { currentUser, logout, pendingCount } = useAppStore(
     useShallow((s) => ({
@@ -101,138 +110,181 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
   };
 
   return (
-    <header className="surface-glass sticky top-0 z-40 w-full">
-      <div className="mx-auto flex h-[var(--header-height)] max-w-[var(--ds-layout-max-content-width)] items-center justify-between gap-4 px-[var(--ds-layout-page-gutter)]">
+    <>
+      <header className="surface-glass sticky top-0 z-40 w-full">
+        <div className="mx-auto flex h-[var(--header-height)] max-w-[var(--ds-layout-max-content-width)] items-center justify-between gap-3 px-[var(--ds-layout-page-gutter)]">
+          <div className="shrink-0">
+            <p className="text-[15px] font-medium tracking-[-0.01em] text-foreground select-none">シフト管理</p>
+            <p className="text-[11px] leading-none text-[var(--on-surface-variant)] select-none mt-0.5">申請・承認</p>
+          </div>
 
-        {/* Logo */}
-        <div className="shrink-0">
-          <p className="text-[15px] font-medium tracking-[-0.01em] text-foreground select-none">シフト管理</p>
-          <p className="text-[11px] leading-none text-[var(--on-surface-variant)] select-none mt-0.5">申請・承認</p>
-        </div>
-
-        {/* Tabs */}
-        <nav className="flex items-center gap-1 overflow-x-auto no-scrollbar rounded-full bg-[var(--surface-container-low)] p-1" aria-label="メインナビゲーション">
-          {topNavItems.map((item) => (
-            <button
-              key={item}
-              onClick={() => handleTopNavClick(item)}
-              className={cn(
-                "tap-target relative rounded-full border border-transparent px-4 py-1.5 text-sm whitespace-nowrap transition-[background-color,color,box-shadow]",
-                activeTopNav === item
-                  ? "bg-[var(--secondary-container)] text-[var(--on-secondary-container)] font-medium shadow-[0_1px_2px_rgba(14,18,27,.1)]"
-                  : "text-[var(--on-surface-variant)] hover:text-foreground hover:bg-[color-mix(in_oklab,var(--surface-container-high)_92%,white_8%)]"
-              )}
-            >
-              {topLabel(item)}
-              {item === "shift" && currentUser.role !== "staff" && pendingCount > 0 && (
-                <span
-                  className="absolute -top-1 -right-1 h-5 w-5 rounded-full text-[10px] font-bold flex items-center justify-center shadow-[0_4px_12px_rgba(20,35,72,.35)]"
-                  style={{
-                    background: "color-mix(in oklab, var(--primary) 78%, black 22%)",
-                    color: "var(--primary-foreground)",
-                  }}
-                >
-                  {pendingCount}
-                </span>
-              )}
-            </button>
-          ))}
-        </nav>
-
-        {/* User menu */}
-        <div className="relative shrink-0">
-          <button
-            onClick={() => setOpen((v) => !v)}
-            className="tap-target flex h-12 w-12 items-center justify-center rounded-full bg-transparent p-0 text-sm text-[var(--on-surface-variant)] transition-[background-color,color] hover:bg-[var(--surface-container-low)] hover:text-foreground"
-            aria-label="ユーザーメニュー"
-          >
-            <div
-              className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold select-none border"
-              style={{
-                background: "var(--primary-container)",
-                color: "var(--on-primary-container)",
-                borderColor: "color-mix(in oklab, var(--primary) 28%, transparent)",
-              }}
-            >
-              {currentUser.name.charAt(0)}
-            </div>
-          </button>
-
-          {open && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-              <div className="absolute right-0 top-full mt-2 z-50 w-56 rounded-[var(--ds-component-modal-corner-radius)] border shadow-[var(--ds-elevation-overlay)] overflow-hidden motion-fade-in" style={{ background: "var(--surface-container-high)", borderColor: "var(--outline-variant)" }}>
-                <div className="px-4 py-3 border-b" style={{ borderColor: "var(--outline-variant)" }}>
-                  <p className="text-sm font-semibold text-foreground leading-tight">{currentUser.name}</p>
-                  <p className="text-[11px] text-[var(--on-surface-variant)] font-mono mt-0.5 truncate">{currentUser.email}</p>
-                  <span className={cn(
-                    "inline-block mt-1.5 text-[10px] font-semibold rounded-full px-2 py-0.5 tracking-wide border",
-                    currentUser.role === "admin" ? "bg-[var(--primary-container)] text-[var(--on-primary-container)]"
-                      : currentUser.role === "reviewer" ? "bg-[var(--secondary-container)] text-[var(--on-secondary-container)]"
-                        : "bg-[var(--surface-container-highest)] text-[var(--on-surface-variant)]"
-                  )}>
-                    {ROLE_LABELS[currentUser.role]}
-                  </span>
-                </div>
-                <button
-                  onClick={() => { logout(); setOpen(false); }}
-                  className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-[var(--on-surface-variant)] hover:text-foreground hover:bg-[var(--surface-container)] transition-colors text-left"
-                >
-                  <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                  ログアウト
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {(isShiftActive || shiftMenuOpen) && (
-        <div className="border-t border-[var(--outline-variant)]/80">
-          <div className="mx-auto flex h-11 max-w-[var(--ds-layout-max-content-width)] items-center gap-1 overflow-x-auto no-scrollbar px-[var(--ds-layout-page-gutter)]">
-            {shiftTabs.map((tab) => (
+          <nav className="hidden md:flex items-center gap-1 overflow-x-auto no-scrollbar rounded-full bg-[var(--surface-container-low)] p-1" aria-label="メインナビゲーション">
+            {topNavItems.map((item) => (
               <button
-                key={tab.id}
-                onClick={() => onTabChange(tab.id)}
+                key={item}
+                onClick={() => handleTopNavClick(item)}
                 className={cn(
-                  "relative rounded-full px-3.5 py-1 text-xs font-medium whitespace-nowrap transition-colors",
-                  activeTab === tab.id
-                    ? "bg-[var(--primary-container)] text-[var(--on-primary-container)]"
-                    : "text-[var(--on-surface-variant)] hover:text-foreground hover:bg-[var(--surface-container-low)]"
+                  "tap-target relative rounded-full border border-transparent px-4 py-1.5 text-sm whitespace-nowrap transition-[background-color,color,box-shadow]",
+                  activeTopNav === item
+                    ? "bg-[var(--secondary-container)] text-[var(--on-secondary-container)] font-medium shadow-[0_1px_2px_rgba(14,18,27,.1)]"
+                    : "text-[var(--on-surface-variant)] hover:text-foreground hover:bg-[color-mix(in_oklab,var(--surface-container-high)_92%,white_8%)]"
                 )}
               >
-                {tab.label}
-                {tab.id === "review" && pendingCount > 0 && (
-                  <span className="ml-1.5 text-[10px] font-bold text-[var(--status-pending)]">({pendingCount})</span>
+                {topLabel(item)}
+                {item === "shift" && currentUser.role !== "staff" && pendingCount > 0 && (
+                  <span
+                    className="absolute -top-1 -right-1 h-5 w-5 rounded-full text-[10px] font-bold flex items-center justify-center shadow-[0_4px_12px_rgba(20,35,72,.35)]"
+                    style={{
+                      background: "color-mix(in oklab, var(--primary) 78%, black 22%)",
+                      color: "var(--primary-foreground)",
+                    }}
+                  >
+                    {pendingCount}
+                  </span>
                 )}
               </button>
             ))}
+          </nav>
+
+          <div className="relative shrink-0">
+            <button
+              onClick={() => setOpen((v) => !v)}
+              className="tap-target flex h-12 w-12 items-center justify-center rounded-full bg-transparent p-0 text-sm text-[var(--on-surface-variant)] transition-[background-color,color] hover:bg-[var(--surface-container-low)] hover:text-foreground"
+              aria-label="ユーザーメニュー"
+            >
+              <div
+                className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold select-none border"
+                style={{
+                  background: "var(--primary-container)",
+                  color: "var(--on-primary-container)",
+                  borderColor: "color-mix(in oklab, var(--primary) 28%, transparent)",
+                }}
+              >
+                {currentUser.name.charAt(0)}
+              </div>
+            </button>
+
+            {open && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+                <div className="absolute right-0 top-full mt-2 z-50 w-56 rounded-[var(--ds-component-modal-corner-radius)] border shadow-[var(--ds-elevation-overlay)] overflow-hidden motion-fade-in" style={{ background: "var(--surface-container-high)", borderColor: "var(--outline-variant)" }}>
+                  <div className="px-4 py-3 border-b" style={{ borderColor: "var(--outline-variant)" }}>
+                    <p className="text-sm font-semibold text-foreground leading-tight">{currentUser.name}</p>
+                    <p className="text-[11px] text-[var(--on-surface-variant)] font-mono mt-0.5 truncate">{currentUser.email}</p>
+                    <span className={cn(
+                      "inline-block mt-1.5 text-[10px] font-semibold rounded-full px-2 py-0.5 tracking-wide border",
+                      currentUser.role === "admin" ? "bg-[var(--primary-container)] text-[var(--on-primary-container)]"
+                        : currentUser.role === "reviewer" ? "bg-[var(--secondary-container)] text-[var(--on-secondary-container)]"
+                          : "bg-[var(--surface-container-highest)] text-[var(--on-surface-variant)]"
+                    )}>
+                      {ROLE_LABELS[currentUser.role]}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      logout();
+                      setOpen(false);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-[var(--on-surface-variant)] hover:text-foreground hover:bg-[var(--surface-container)] transition-colors text-left"
+                  >
+                    <LogOut className="h-4 w-4 shrink-0" />
+                    ログアウト
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
-      )}
-    </header>
+
+        {(isShiftActive || shiftMenuOpen) && (
+          <div className="border-t border-[var(--outline-variant)]/80">
+            <div className="mx-auto flex h-11 max-w-[var(--ds-layout-max-content-width)] items-center gap-1 overflow-x-auto no-scrollbar px-[var(--ds-layout-page-gutter)]">
+              {shiftTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => onTabChange(tab.id)}
+                  className={cn(
+                    "relative rounded-full px-3.5 py-1 text-xs font-medium whitespace-nowrap transition-colors",
+                    activeTab === tab.id
+                      ? "bg-[var(--primary-container)] text-[var(--on-primary-container)]"
+                      : "text-[var(--on-surface-variant)] hover:text-foreground hover:bg-[var(--surface-container-low)]"
+                  )}
+                >
+                  {tab.label}
+                  {tab.id === "review" && pendingCount > 0 && (
+                    <span className="ml-1.5 text-[10px] font-bold text-[var(--status-pending)]">({pendingCount})</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </header>
+
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--outline-variant)]/90 bg-[color-mix(in_oklab,var(--surface-container-low)_92%,transparent)] backdrop-blur-md md:hidden">
+        <div className="mx-auto grid max-w-[var(--ds-layout-max-content-width)]" style={{ gridTemplateColumns: `repeat(${topNavItems.length}, minmax(0, 1fr))` }}>
+          {topNavItems.map((item) => {
+            const Icon = topIcon(item);
+            const isActive = activeTopNav === item;
+            return (
+              <button
+                key={`mobile-${item}`}
+                onClick={() => handleTopNavClick(item)}
+                className={cn(
+                  "relative flex h-[72px] flex-col items-center justify-center gap-1 pb-[max(env(safe-area-inset-bottom),0px)]",
+                  isActive ? "text-[var(--primary)]" : "text-[var(--on-surface-variant)]"
+                )}
+                aria-label={topLabel(item)}
+              >
+                <Icon className="h-5 w-5" strokeWidth={2.4} />
+                <span className="text-[10px] font-medium">{topLabel(item)}</span>
+                {item === "shift" && currentUser.role !== "staff" && pendingCount > 0 && (
+                  <span className="absolute top-2 right-[calc(50%-17px)] min-w-[18px] h-[18px] rounded-full px-1 text-[10px] font-bold leading-[18px] text-center shadow-[0_4px_12px_rgba(20,35,72,.35)]"
+                    style={{
+                      background: "color-mix(in oklab, var(--primary) 78%, black 22%)",
+                      color: "var(--primary-foreground)",
+                    }}
+                  >
+                    {pendingCount}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+    </>
   );
 }
 
 export function AppNavSkeleton() {
   return (
-    <header className="surface-glass sticky top-0 z-40 w-full">
-      <div className="mx-auto flex h-[var(--header-height)] max-w-[var(--ds-layout-max-content-width)] items-center justify-between gap-4 px-[var(--ds-layout-page-gutter)]">
-        <div className="shrink-0">
-          <p className="text-[15px] font-medium tracking-[-0.01em] text-foreground select-none">シフト管理</p>
-          <p className="text-[11px] leading-none text-[var(--on-surface-variant)] select-none mt-0.5">読み込み中</p>
+    <>
+      <header className="surface-glass sticky top-0 z-40 w-full">
+        <div className="mx-auto flex h-[var(--header-height)] max-w-[var(--ds-layout-max-content-width)] items-center justify-between gap-4 px-[var(--ds-layout-page-gutter)]">
+          <div className="shrink-0">
+            <p className="text-[15px] font-medium tracking-[-0.01em] text-foreground select-none">シフト管理</p>
+            <p className="text-[11px] leading-none text-[var(--on-surface-variant)] select-none mt-0.5">読み込み中</p>
+          </div>
+          <nav className="hidden md:flex items-center gap-1 overflow-x-auto no-scrollbar rounded-full bg-[var(--surface-container-low)] p-1" aria-label="ナビゲーション読み込み">
+            <Skeleton className="h-8 w-20 rounded-full" />
+            <Skeleton className="h-8 w-20 rounded-full" />
+            <Skeleton className="h-8 w-20 rounded-full" />
+          </nav>
+          <div className="shrink-0">
+            <Skeleton className="h-12 w-12 rounded-full" />
+          </div>
         </div>
-        <nav className="flex items-center gap-1 overflow-x-auto no-scrollbar rounded-full bg-[var(--surface-container-low)] p-1" aria-label="ナビゲーション読み込み">
-          <Skeleton className="h-8 w-20 rounded-full" />
-          <Skeleton className="h-8 w-20 rounded-full" />
-          <Skeleton className="h-8 w-20 rounded-full" />
-        </nav>
-        <div className="shrink-0">
-          <Skeleton className="h-12 w-12 rounded-full" />
+      </header>
+
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--outline-variant)]/90 bg-[color-mix(in_oklab,var(--surface-container-low)_92%,transparent)] px-4 py-2 md:hidden">
+        <div className="mx-auto grid max-w-[var(--ds-layout-max-content-width)] grid-cols-4 gap-2">
+          <Skeleton className="h-12 rounded-2xl" />
+          <Skeleton className="h-12 rounded-2xl" />
+          <Skeleton className="h-12 rounded-2xl" />
+          <Skeleton className="h-12 rounded-2xl" />
         </div>
-      </div>
-    </header>
+      </nav>
+    </>
   );
 }

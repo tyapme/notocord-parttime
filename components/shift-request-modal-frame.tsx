@@ -4,8 +4,10 @@ import { Status } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/status-badge";
 import { XIcon } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Drawer, DrawerContent } from "@/components/ui/drawer";
 
-export function ShiftRequestModalFrame({
+function FrameContent({
   onClose,
   header,
   status,
@@ -24,31 +26,85 @@ export function ShiftRequestModalFrame({
 }) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-foreground/15 backdrop-blur-sm px-4 pb-safe"
+      className={cn(
+        "modal-surface w-full overflow-hidden max-h-[92dvh] flex flex-col",
+        maxWidthClassName ?? "max-w-sm"
+      )}
+    >
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
+        <div className="flex items-center gap-2 min-w-0">{header}</div>
+        <div className="flex items-center gap-2.5 shrink-0">
+          {status && <StatusBadge status={status} />}
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors" aria-label="閉じる">
+            <XIcon className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      <div className={cn("overflow-y-auto no-scrollbar flex-1", bodyClassName)}>{children}</div>
+
+      {footer && <div className="px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] modal-divider shrink-0">{footer}</div>}
+    </div>
+  );
+}
+
+export function ShiftRequestModalFrame({
+  onClose,
+  header,
+  status,
+  children,
+  footer,
+  maxWidthClassName,
+  bodyClassName,
+}: {
+  onClose: () => void;
+  header: React.ReactNode;
+  status?: Status;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+  maxWidthClassName?: string;
+  bodyClassName?: string;
+}) {
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <Drawer open onOpenChange={(open) => !open && onClose()}>
+        <DrawerContent className="border-t border-[var(--outline-variant)] bg-transparent p-0 shadow-none">
+          <div className="mx-auto w-full max-w-[var(--ds-layout-max-content-width)] px-2 pb-2">
+            <FrameContent
+              onClose={onClose}
+              header={header}
+              status={status}
+              footer={footer}
+              maxWidthClassName="max-w-full"
+              bodyClassName={bodyClassName}
+            >
+              {children}
+            </FrameContent>
+          </div>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/15 backdrop-blur-sm px-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div
-        className={cn(
-          "modal-surface w-full overflow-hidden max-h-[92dvh] flex flex-col mb-4",
-          maxWidthClassName ?? "max-w-sm"
-        )}
+      <FrameContent
+        onClose={onClose}
+        header={header}
+        status={status}
+        footer={footer}
+        maxWidthClassName={maxWidthClassName}
+        bodyClassName={bodyClassName}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
-          <div className="flex items-center gap-2 min-w-0">{header}</div>
-          <div className="flex items-center gap-2.5 shrink-0">
-            {status && <StatusBadge status={status} />}
-            <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors" aria-label="閉じる">
-              <XIcon className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-
-        <div className={cn("overflow-y-auto no-scrollbar flex-1", bodyClassName)}>{children}</div>
-
-        {footer && <div className="px-5 pb-4 modal-divider shrink-0">{footer}</div>}
-      </div>
+        {children}
+      </FrameContent>
     </div>
   );
 }

@@ -174,26 +174,41 @@ export function StaffRequestModal({
 
   if (showWithdrawConfirm) {
     return (
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-foreground/20 backdrop-blur-sm px-4 pb-4">
-        <div className="modal-surface w-full max-w-sm p-5 space-y-3.5">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-base font-bold text-foreground">
-              {request.status === "approved" ? "確定済みシフトを取り下げますか？" : "申請を取り下げますか？"}
-            </p>
-            <button
-              onClick={() => {
+      <ShiftRequestModalFrame
+        onClose={() => {
+          setShowWithdrawConfirm(false);
+          setWithdrawReason("");
+          setWithdrawError(null);
+        }}
+        header={(
+          <p className="text-sm font-bold text-foreground truncate">
+            {request.status === "approved" ? "確定済みシフトを取り下げますか？" : "申請を取り下げますか？"}
+          </p>
+        )}
+        bodyClassName="px-5 py-4 space-y-3.5"
+        footer={(
+          <button
+            onClick={async () => {
+              const reason = withdrawReason.trim();
+              if (!reason) {
+                setWithdrawError("取り下げ理由を入力してください");
+                return;
+              }
+              const ok = await withdrawRequest(request.id, reason);
+              if (ok) {
                 setShowWithdrawConfirm(false);
                 setWithdrawReason("");
                 setWithdrawError(null);
-              }}
-              className="text-muted-foreground hover:text-foreground transition-colors"
-              aria-label="閉じる"
-            >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
+                onClose();
+              }
+            }}
+            className="button-primary w-full bg-[var(--status-withdrawn-bg)] text-[var(--status-withdrawn)]"
+          >
+            シフト取り下げ
+          </button>
+        )}
+      >
+        <div className="space-y-3.5">
           <div className="rounded-[var(--ds-radius-md)] border border-[var(--status-rejected)]/25 bg-[var(--status-rejected-bg)]/50 px-3.5 py-3">
             <p className="text-xs font-semibold text-[var(--status-rejected)]">この操作は取り消せません</p>
             <p className="mt-1 text-xs text-muted-foreground">取り下げ理由の入力が必要です。</p>
@@ -215,29 +230,8 @@ export function StaffRequestModal({
             />
           </div>
           {withdrawError && <p className="text-xs font-medium text-[var(--status-rejected)]">{withdrawError}</p>}
-          <div className="pt-1">
-            <button
-              onClick={async () => {
-                const reason = withdrawReason.trim();
-                if (!reason) {
-                  setWithdrawError("取り下げ理由を入力してください");
-                  return;
-                }
-                const ok = await withdrawRequest(request.id, reason);
-                if (ok) {
-                  setShowWithdrawConfirm(false);
-                  setWithdrawReason("");
-                  setWithdrawError(null);
-                  onClose();
-                }
-              }}
-              className="button-primary w-full bg-[var(--status-withdrawn-bg)] text-[var(--status-withdrawn)]"
-            >
-              シフト取り下げ
-            </button>
-          </div>
         </div>
-      </div>
+      </ShiftRequestModalFrame>
     );
   }
 

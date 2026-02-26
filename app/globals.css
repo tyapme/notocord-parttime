@@ -72,6 +72,16 @@
   [role='button'] {
     transition-timing-function: var(--ds-easing-standard);
   }
+  @media (max-width: 767px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px;
+    }
+    .input-base {
+      font-size: 16px;
+    }
+  }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.01ms !important;
@@ -104,7 +114,12 @@
     }
   }
   .app-shell-main {
-    @apply pb-24;
+    padding-bottom: calc(72px + env(safe-area-inset-bottom) + 1rem);
+  }
+  @media (min-width: 768px) {
+    .app-shell-main {
+      padding-bottom: 6rem;
+    }
   }
   .app-content {
     @apply mx-auto w-full px-[var(--ds-layout-page-gutter)] py-8 md:py-9;
