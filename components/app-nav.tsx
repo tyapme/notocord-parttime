@@ -206,11 +206,14 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
                   className={cn(
                     "relative rounded-full px-3.5 py-1 text-xs font-medium whitespace-nowrap transition-colors",
                     activeTab === tab.id
-                      ? "bg-[var(--primary-container)] text-[var(--on-primary-container)]"
+                      ? "text-[var(--primary)]"
                       : "text-[var(--on-surface-variant)] hover:text-foreground hover:bg-[var(--surface-container-low)]"
                   )}
                 >
                   {tab.label}
+                  {activeTab === tab.id && (
+                    <span className="absolute inset-x-2 -bottom-0.5 h-0.5 rounded-full bg-[var(--primary)]" />
+                  )}
                   {tab.id === "review" && pendingCount > 0 && (
                     <span className="ml-1.5 text-[10px] font-bold text-[var(--status-pending)]">({pendingCount})</span>
                   )}
@@ -223,12 +226,12 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--outline-variant)]/90 bg-[color-mix(in_oklab,var(--surface-container-low)_92%,transparent)] backdrop-blur-md px-2 pt-2 pb-[max(env(safe-area-inset-bottom),8px)] md:hidden">
         <div
-          className="relative mx-auto grid max-w-[var(--ds-layout-max-content-width)] rounded-2xl bg-[var(--surface-container)] p-1"
+          className="relative mx-auto grid max-w-[var(--ds-layout-max-content-width)] p-1"
           style={{ gridTemplateColumns: `repeat(${topNavItems.length}, minmax(0, 1fr))` }}
         >
           <span
             aria-hidden
-            className="pointer-events-none absolute left-1 top-1 bottom-1 rounded-xl bg-[var(--primary-container)] shadow-[0_1px_2px_rgba(14,18,27,.12)] transition-transform duration-300 ease-out"
+            className="pointer-events-none absolute left-1 top-1 bottom-1 rounded-xl bg-[color-mix(in_oklab,var(--primary-container)_75%,transparent)] transition-transform duration-300 ease-out"
             style={{
               width: `calc((100% - 0.5rem) / ${topNavItems.length})`,
               transform: `translateX(${activeIndex * 100}%)`,
@@ -244,7 +247,7 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
                 className={cn(
                   "relative z-10 flex h-[56px] flex-col items-center justify-center gap-0.5 rounded-xl transition-colors",
                   isActive
-                    ? "text-[var(--on-primary-container)]"
+                    ? "text-[var(--primary)]"
                     : "text-[var(--on-surface-variant)] hover:text-foreground"
                 )}
                 aria-label={topLabel(item)}
