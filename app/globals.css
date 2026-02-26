@@ -51,6 +51,8 @@
   }
   html, body {
     min-height: 100%;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
   body {
     @apply text-foreground antialiased;
@@ -72,7 +74,7 @@
   [role='button'] {
     transition-timing-function: var(--ds-easing-standard);
   }
-  @media (max-width: 767px) {
+  @media (hover: none) and (pointer: coarse) {
     input[type='text'],
     input[type='email'],
     input[type='number'],
@@ -86,9 +88,11 @@
     select,
     textarea {
       font-size: 16px !important;
+      line-height: 1.35;
     }
     .input-base {
       font-size: 16px !important;
+      line-height: 1.35;
     }
   }
   @media (prefers-reduced-motion: reduce) {

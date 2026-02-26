@@ -72,7 +72,7 @@ export function ShiftRequestModalFrame({
   if (isMobile) {
     return (
       <Drawer open onOpenChange={(open) => !open && onClose()}>
-        <DrawerContent className="data-[vaul-drawer-direction=bottom]:max-h-[92dvh] min-h-0 overflow-hidden rounded-t-[var(--ds-component-modal-corner-radius)] rounded-b-none border-t border-[var(--outline-variant)] bg-[var(--surface-container-high)] shadow-[var(--ds-elevation-overlay)]">
+        <DrawerContent className="data-[vaul-drawer-direction=bottom]:max-h-[92dvh] min-h-0 overflow-hidden rounded-t-[var(--ds-component-modal-corner-radius)] rounded-b-none border-0 bg-[var(--surface-container-high)] shadow-none">
           <FrameContent onClose={onClose} header={header} status={status} footer={footer} bodyClassName={bodyClassName} maxWidthClassName="max-w-none">
             {children}
           </FrameContent>
