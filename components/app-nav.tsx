@@ -220,8 +220,8 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
         )}
       </header>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--outline-variant)]/90 bg-[color-mix(in_oklab,var(--surface-container-low)_92%,transparent)] backdrop-blur-md pb-[max(env(safe-area-inset-bottom),4px)] md:hidden">
-        <div className="mx-auto grid max-w-[var(--ds-layout-max-content-width)]" style={{ gridTemplateColumns: `repeat(${topNavItems.length}, minmax(0, 1fr))` }}>
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--outline-variant)]/90 bg-[color-mix(in_oklab,var(--surface-container-low)_92%,transparent)] backdrop-blur-md px-2 pt-2 pb-[max(env(safe-area-inset-bottom),8px)] md:hidden">
+        <div className="mx-auto grid max-w-[var(--ds-layout-max-content-width)] gap-1" style={{ gridTemplateColumns: `repeat(${topNavItems.length}, minmax(0, 1fr))` }}>
           {topNavItems.map((item) => {
             const Icon = topIcon(item);
             const isActive = activeTopNav === item;
@@ -230,13 +230,15 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
                 key={`mobile-${item}`}
                 onClick={() => handleTopNavClick(item)}
                 className={cn(
-                  "relative flex h-[60px] flex-col items-center justify-center gap-1",
-                  isActive ? "text-[var(--primary)]" : "text-[var(--on-surface-variant)]"
+                  "relative flex h-[56px] items-center justify-center rounded-2xl transition-colors",
+                  isActive
+                    ? "bg-[var(--primary-container)] text-[var(--on-primary-container)]"
+                    : "text-[var(--on-surface-variant)] hover:bg-[var(--surface-container)]"
                 )}
                 aria-label={topLabel(item)}
+                title={topLabel(item)}
               >
                 <Icon className="h-5 w-5" strokeWidth={2.4} />
-                <span className="text-[10px] font-medium">{topLabel(item)}</span>
                 {item === "shift" && currentUser.role !== "staff" && pendingCount > 0 && (
                   <span className="absolute top-2 right-[calc(50%-17px)] min-w-[18px] h-[18px] rounded-full px-1 text-[10px] font-bold leading-[18px] text-center shadow-[0_4px_12px_rgba(20,35,72,.35)]"
                     style={{
