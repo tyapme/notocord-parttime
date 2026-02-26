@@ -1,0 +1,271 @@
+{
+  "meta": {
+    "name": "material-3-blue-system",
+    "version": "2.2.1",
+    "updatedAt": "2026-02-26",
+    "intent": "M3 トーンを維持しつつ、全体を丸みのある角丸スタイルで統一した業務UI"
+  },
+  "sources": [
+    {
+      "name": "Material Design 3",
+      "url": "https://m3.material.io/"
+    },
+    {
+      "name": "Material Web",
+      "url": "https://material-web.dev/components/button/"
+    },
+    {
+      "name": "Android Material 3",
+      "url": "https://developer.android.com/develop/ui/compose/designsystems/material3"
+    }
+  ],
+  "principles": {
+    "hierarchy": "見出しと余白で情報優先度を明確化し、色は補助に使う",
+    "harmony": "surface/container 階層で奥行きを作り、境界線を減らす",
+    "clarity": "状態はラベル + 形 + 色で区別し、意味を重複伝達する",
+    "consistency": "コンポーネントはロールカラーと形状トークンのみで組み立てる",
+    "accessibility": "48px以上のタップ領域と読みやすいコントラストを維持する"
+  },
+  "protocol": {
+    "layout": {
+      "maxContentWidth": "58rem",
+      "pageGutter": "1rem",
+      "sectionGap": "1.5rem"
+    },
+    "interaction": {
+      "focusRing": "3px color-mix(in oklab, var(--ring) 35%, transparent)",
+      "hoverOpacity": 1,
+      "pressScale": 1
+    },
+    "copyTone": {
+      "style": "short-and-clear",
+      "labels": "action-first",
+      "errors": "actionable-japanese"
+    }
+  },
+  "tokens": {
+    "spacing": {
+      "4": "4px",
+      "8": "8px",
+      "12": "12px",
+      "16": "16px",
+      "20": "20px",
+      "24": "24px",
+      "32": "32px",
+      "40": "40px",
+      "56": "56px",
+      "28": "28px",
+      "36": "36px",
+      "48": "48px",
+      "64": "64px"
+    },
+    "radius": {
+      "base": "18px",
+      "sm": "12px",
+      "md": "16px",
+      "lg": "22px",
+      "xl": "32px",
+      "pill": "9999px"
+    },
+    "typography": {
+      "fontFamily": {
+        "sans": "'Noto Sans JP', Roboto, 'Helvetica Neue', Arial, sans-serif",
+        "mono": "'Roboto Mono', 'SF Mono', ui-monospace, monospace"
+      },
+      "size": {
+        "xs": "12px",
+        "sm": "14px",
+        "md": "16px",
+        "lg": "22px",
+        "xl": "28px"
+      },
+      "lineHeight": {
+        "tight": "1.25",
+        "normal": "1.5",
+        "relaxed": "1.6"
+      }
+    },
+    "motion": {
+      "durationFast": "120ms",
+      "durationBase": "200ms",
+      "durationSlow": "280ms",
+      "easingStandard": "cubic-bezier(0.2, 0, 0, 1)",
+      "durationEnter": "300ms",
+      "durationExit": "200ms",
+      "easingEmphasized": "cubic-bezier(0.2, 0, 0, 1)",
+      "easingDecelerated": "cubic-bezier(0, 0, 0, 1)",
+      "easingAccelerated": "cubic-bezier(0.3, 0, 1, 1)"
+    },
+    "elevation": {
+      "card": "0 1px 2px rgba(14, 18, 27, 0.08), 0 1px 3px rgba(14, 18, 27, 0.12)",
+      "overlay": "0 8px 24px rgba(14, 18, 27, 0.24)"
+    },
+    "cssVariables": {
+      "light": {
+        "background": "#f8f9ff",
+        "foreground": "#1a1b22",
+        "surface": "#f8f9ff",
+        "surface-dim": "#d8dae2",
+        "surface-bright": "#f8f9ff",
+        "surface-container-lowest": "#ffffff",
+        "surface-container-low": "#f1f4fc",
+        "surface-container": "#eceef6",
+        "surface-container-high": "#e6e8f0",
+        "surface-container-highest": "#e0e2ea",
+        "card": "#f1f4fc",
+        "card-foreground": "#1a1b22",
+        "popover": "#eef1fa",
+        "popover-foreground": "#1a1b22",
+        "primary": "#325da8",
+        "primary-foreground": "#ffffff",
+        "primary-container": "#d8e3ff",
+        "on-primary-container": "#001a42",
+        "secondary": "#525f79",
+        "secondary-foreground": "#ffffff",
+        "secondary-container": "#d8e3fa",
+        "on-secondary-container": "#101c32",
+        "tertiary": "#356b63",
+        "tertiary-foreground": "#ffffff",
+        "tertiary-container": "#bbece2",
+        "on-tertiary-container": "#00201c",
+        "accent": "#d8e3fa",
+        "accent-foreground": "#101c32",
+        "muted": "#e9edf6",
+        "muted-foreground": "#5a606b",
+        "destructive": "#ba1a1a",
+        "destructive-foreground": "#ffffff",
+        "border": "#c2c6d0",
+        "input": "#e0e2ea",
+        "ring": "#325da8",
+        "outline": "#727782",
+        "outline-variant": "#c2c6d0",
+        "on-surface-variant": "#434850",
+        "inverse-surface": "#2f3037",
+        "inverse-on-surface": "#f1f1f8",
+        "inverse-primary": "#aac7ff",
+        "chart-1": "#325da8",
+        "chart-2": "#356b63",
+        "chart-3": "#8b4f82",
+        "chart-4": "#775a00",
+        "chart-5": "#9a4600",
+        "sidebar": "#eef1fa",
+        "sidebar-foreground": "#1a1b22",
+        "sidebar-primary": "#325da8",
+        "sidebar-primary-foreground": "#ffffff",
+        "sidebar-accent": "#d8e3fa",
+        "sidebar-accent-foreground": "#101c32",
+        "sidebar-border": "#c2c6d0",
+        "sidebar-ring": "#325da8",
+        "status-pending": "#775a00",
+        "status-pending-bg": "#ffe08a",
+        "status-approved": "#146c2e",
+        "status-approved-bg": "#c8f7c8",
+        "status-rejected": "#ba1a1a",
+        "status-rejected-bg": "#ffdad6",
+        "status-withdrawn": "#5f5f63",
+        "status-withdrawn-bg": "#e3e2e6",
+        "section-divider-margin-top": "18px",
+        "section-divider-padding-top": "18px",
+        "modal-divider-padding-top": "18px",
+        "tap-target": "48px",
+        "header-glass-bg": "rgba(241, 244, 252, 0.82)",
+        "header-glass-border": "rgba(194, 198, 208, 0.9)",
+        "header-height": "72px",
+        "skeleton-base": "#e2e5ee",
+        "skeleton-highlight": "#eff2f9",
+        "surface-tint": "#325da8",
+        "state-hover-opacity": "0.08",
+        "state-focus-opacity": "0.12",
+        "state-pressed-opacity": "0.12",
+        "state-dragged-opacity": "0.16"
+      },
+      "dark": {
+        "background": "#11131a",
+        "foreground": "#e2e2ea",
+        "surface": "#11131a",
+        "surface-dim": "#11131a",
+        "surface-bright": "#373941",
+        "surface-container-lowest": "#0d0f15",
+        "surface-container-low": "#1a1d24",
+        "surface-container": "#1f2229",
+        "surface-container-high": "#2a2d35",
+        "surface-container-highest": "#353841",
+        "card": "#1a1d24",
+        "card-foreground": "#e2e2ea",
+        "popover": "#1f2229",
+        "popover-foreground": "#e2e2ea",
+        "primary": "#aac7ff",
+        "primary-foreground": "#002f67",
+        "primary-container": "#0f468d",
+        "on-primary-container": "#d8e3ff",
+        "secondary": "#bac7e3",
+        "secondary-foreground": "#243148",
+        "secondary-container": "#3a475f",
+        "on-secondary-container": "#d8e3fa",
+        "tertiary": "#9fd0c7",
+        "tertiary-foreground": "#003731",
+        "tertiary-container": "#1d524a",
+        "on-tertiary-container": "#bbece2",
+        "accent": "#3a475f",
+        "accent-foreground": "#d8e3fa",
+        "muted": "#2a2d35",
+        "muted-foreground": "#c1c5d0",
+        "destructive": "#ffb4ab",
+        "destructive-foreground": "#690005",
+        "border": "#444851",
+        "input": "#353841",
+        "ring": "#aac7ff",
+        "outline": "#8c919c",
+        "outline-variant": "#444851",
+        "on-surface-variant": "#c2c6d1",
+        "inverse-surface": "#e2e2ea",
+        "inverse-on-surface": "#2f3037",
+        "inverse-primary": "#325da8",
+        "chart-1": "#aac7ff",
+        "chart-2": "#9fd0c7",
+        "chart-3": "#f4b8ea",
+        "chart-4": "#e3c66e",
+        "chart-5": "#ffb77f",
+        "sidebar": "#1a1d24",
+        "sidebar-foreground": "#e2e2ea",
+        "sidebar-primary": "#aac7ff",
+        "sidebar-primary-foreground": "#002f67",
+        "sidebar-accent": "#3a475f",
+        "sidebar-accent-foreground": "#d8e3fa",
+        "sidebar-border": "#444851",
+        "sidebar-ring": "#aac7ff",
+        "header-glass-bg": "rgba(26, 29, 36, 0.82)",
+        "header-glass-border": "rgba(68, 72, 81, 0.9)",
+        "header-height": "72px",
+        "skeleton-base": "#353841",
+        "skeleton-highlight": "#40444d",
+        "tap-target": "48px",
+        "surface-tint": "#aac7ff",
+        "state-hover-opacity": "0.08",
+        "state-focus-opacity": "0.12",
+        "state-pressed-opacity": "0.12",
+        "state-dragged-opacity": "0.16"
+      }
+    }
+  },
+  "components": {
+    "button": {
+      "minHeight": "40px",
+      "cornerRadius": "var(--radius-pill)",
+      "fontWeight": 500
+    },
+    "input": {
+      "minHeight": "48px",
+      "cornerRadius": "var(--radius-lg)",
+      "border": "1px solid var(--outline-variant)"
+    },
+    "card": {
+      "cornerRadius": "var(--radius-xl)",
+      "shadow": "var(--elevation-card)"
+    },
+    "modal": {
+      "cornerRadius": "var(--radius-xl)",
+      "shadow": "var(--elevation-overlay)"
+    }
+  }
+}
