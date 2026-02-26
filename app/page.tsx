@@ -32,9 +32,5 @@ export default function Page() {
     return <LoginScreen />;
   }
 
-  return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <p className="surface-card-subtle px-4 py-3 text-sm text-muted-foreground">リダイレクト中...</p>
-    </div>
-  );
+  return <div className="min-h-screen bg-[var(--surface)]" />;
 }
