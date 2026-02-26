@@ -59,8 +59,9 @@ export function LoginScreen() {
               value={email}
               onChange={(e) => { setEmail(e.target.value); setError(""); }}
               placeholder="user@example.com"
-            className={cn("input-base", error && "border-[var(--status-rejected)]")}
-          />
+              className={cn("input-base", error && "border-[var(--status-rejected)]")}
+              style={{ fontSize: "16px" }}
+            />
           </div>
 
           {/* Error */}
