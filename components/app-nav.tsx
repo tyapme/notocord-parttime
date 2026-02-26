@@ -224,7 +224,7 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--outline-variant)]/90 bg-[color-mix(in_oklab,var(--surface-container-low)_92%,transparent)] backdrop-blur-md px-2 pt-2 pb-[max(env(safe-area-inset-bottom),8px)] md:hidden">
         <div
-          className="relative mx-auto grid max-w-[var(--ds-layout-max-content-width)] rounded-2xl bg-[var(--surface-container)] p-1"
+          className="relative mx-auto grid max-w-[var(--ds-layout-max-content-width)] rounded-2xl p-1"
           style={{ gridTemplateColumns: `repeat(${topNavItems.length}, minmax(0, 1fr))` }}
         >
           <span
