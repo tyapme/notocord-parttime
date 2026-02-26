@@ -84,11 +84,13 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
   const isShiftActive = activeTopNav === "shift";
 
   useEffect(() => {
-    if (isShiftActive) setShiftMenuOpen(true);
+    // Keep submenu behavior same as pre-persistent-shell navigation.
+    setShiftMenuOpen(isShiftActive);
   }, [isShiftActive]);
 
   if (!currentUser) return null;
   const topNavItems = getTopNavItems(currentUser.role);
+  const activeIndex = Math.max(0, topNavItems.findIndex((item) => item === activeTopNav));
   const shiftTabs = getShiftSubmenu(currentUser.role);
 
   const handleTopNavClick = (id: TopNavId) => {
@@ -221,7 +223,18 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
       </header>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--outline-variant)]/90 bg-[color-mix(in_oklab,var(--surface-container-low)_92%,transparent)] backdrop-blur-md px-2 pt-2 pb-[max(env(safe-area-inset-bottom),8px)] md:hidden">
-        <div className="mx-auto grid max-w-[var(--ds-layout-max-content-width)]" style={{ gridTemplateColumns: `repeat(${topNavItems.length}, minmax(0, 1fr))` }}>
+        <div
+          className="relative mx-auto grid max-w-[var(--ds-layout-max-content-width)] rounded-2xl bg-[var(--surface-container)] p-1"
+          style={{ gridTemplateColumns: `repeat(${topNavItems.length}, minmax(0, 1fr))` }}
+        >
+          <span
+            aria-hidden
+            className="pointer-events-none absolute left-1 top-1 bottom-1 rounded-xl bg-[var(--primary-container)] shadow-[0_1px_2px_rgba(14,18,27,.12)] transition-transform duration-300 ease-out"
+            style={{
+              width: `calc((100% - 0.5rem) / ${topNavItems.length})`,
+              transform: `translateX(${activeIndex * 100}%)`,
+            }}
+          />
           {topNavItems.map((item) => {
             const Icon = topIcon(item);
             const isActive = activeTopNav === item;
@@ -230,16 +243,18 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
                 key={`mobile-${item}`}
                 onClick={() => handleTopNavClick(item)}
                 className={cn(
-                  "relative flex h-[60px] flex-col items-center justify-center gap-1",
-                  isActive ? "text-[var(--primary)]" : "text-[var(--on-surface-variant)]"
+                  "relative z-10 flex h-[56px] flex-col items-center justify-center gap-0.5 rounded-xl transition-colors",
+                  isActive
+                    ? "text-[var(--on-primary-container)]"
+                    : "text-[var(--on-surface-variant)] hover:text-foreground"
                 )}
                 aria-label={topLabel(item)}
                 title={topLabel(item)}
               >
-                <Icon className="h-5 w-5" strokeWidth={2.4} />
-                <span className="text-[10px] font-medium">{topLabel(item)}</span>
+                <Icon className="h-[22px] w-[22px]" strokeWidth={2.4} />
+                <span className="text-[10px] font-medium leading-none">{topLabel(item)}</span>
                 {item === "shift" && currentUser.role !== "staff" && pendingCount > 0 && (
-                  <span className="absolute top-2 right-[calc(50%-17px)] min-w-[18px] h-[18px] rounded-full px-1 text-[10px] font-bold leading-[18px] text-center shadow-[0_4px_12px_rgba(20,35,72,.35)]"
+                  <span className="absolute right-[calc(50%-22px)] top-1 min-w-[18px] h-[18px] rounded-full px-1 text-[10px] font-bold leading-[18px] text-center shadow-[0_4px_12px_rgba(20,35,72,.35)]"
                     style={{
                       background: "color-mix(in oklab, var(--primary) 78%, black 22%)",
                       color: "var(--primary-foreground)",
