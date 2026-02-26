@@ -59,6 +59,9 @@
     --ds-font-sans: var(--font-zen-kaku-gothic-new), "Zen Kaku Gothic New", "Noto Sans JP", sans-serif;
     font-family: var(--ds-font-sans);
     background: var(--surface);
+    background-image:
+      radial-gradient(95% 70% at 0% -10%, color-mix(in oklab, var(--primary-container) 32%, transparent) 0%, transparent 62%),
+      radial-gradient(78% 58% at 112% -12%, color-mix(in oklab, var(--secondary-container) 26%, transparent) 0%, transparent 66%);
     line-height: var(--ds-line-height-normal);
   }
   h1, h2, h3, h4, h5, h6 {
