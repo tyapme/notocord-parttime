@@ -16,7 +16,6 @@ import {
   sortRequestsByWorkDateNearest,
 } from "@/lib/request-list";
 import { formatFlexRequestVsApproved, getApprovalSummary, isProxyRequest } from "@/lib/request-meta";
-import { ListCardSkeleton } from "@/components/loading-skeletons";
 import { MetaTag, TypeTag } from "./request-detail-sections";
 import { ChevronRight } from "lucide-react";
 import { StaffRequestModal } from "@/components/staff-request-modal";
@@ -25,7 +24,6 @@ export function MyRequestsScreen({ onNewRequest }: { onNewRequest: () => void })
   const currentUser = useAppStore((s) => s.currentUser);
   const currentUserId = currentUser?.id ?? "";
   const requests = useAppStore((s) => s.requests);
-  const dataLoading = useAppStore((s) => s.dataLoading);
   const fetchRequests = useAppStore((s) => s.fetchRequests);
   const globalError = useAppStore((s) => s.error);
 
@@ -102,11 +100,7 @@ export function MyRequestsScreen({ onNewRequest }: { onNewRequest: () => void })
         </div>
       )}
 
-      {dataLoading ? (
-        <div className="space-y-2">
-          <ListCardSkeleton rows={4} />
-        </div>
-      ) : filtered.length === 0 ? (
+      {filtered.length === 0 ? (
         <div className="py-24 text-center">
           <p className="text-sm text-muted-foreground">申請はまだありません</p>
           <button

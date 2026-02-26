@@ -5,7 +5,6 @@ import { useAppStore } from "@/lib/store";
 import { FixRequest, FlexRequest, Request, User } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/status-badge";
-import { ListCardSkeleton } from "@/components/loading-skeletons";
 import {
   formatIsoWeekLabel,
   formatJstDateLabel,
@@ -31,20 +30,12 @@ export function UsersDetailScreen() {
   const fetchUsers = useAppStore((s) => s.fetchUsers);
   const fetchRequests = useAppStore((s) => s.fetchRequests);
 
-  const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [selectedUserId, setSelectedUserId] = useState("");
   const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    Promise.all([fetchUsers(), fetchRequests()]).finally(() => {
-      if (!cancelled) setLoading(false);
-    });
-    return () => {
-      cancelled = true;
-    };
+    void Promise.all([fetchUsers(), fetchRequests()]);
   }, [fetchUsers, fetchRequests]);
 
   const visibleUsers = useMemo(() => {
@@ -109,11 +100,7 @@ export function UsersDetailScreen() {
             />
           </div>
 
-          {loading ? (
-            <div className="space-y-2">
-              <ListCardSkeleton rows={3} />
-            </div>
-          ) : visibleUsers.length === 0 ? (
+          {visibleUsers.length === 0 ? (
             <div className="rounded-[var(--ds-radius-md)] border border-border bg-muted/30 px-3 py-4 text-xs text-muted-foreground">
               対象ユーザーがいません。
             </div>

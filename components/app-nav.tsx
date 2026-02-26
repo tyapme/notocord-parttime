@@ -5,7 +5,6 @@ import { useAppStore } from "@/lib/store";
 import { useShallow } from "zustand/react/shallow";
 import { cn } from "@/lib/utils";
 import { Role } from "@/lib/types";
-import { Skeleton } from "@/components/ui/skeleton";
 import { CalendarDays, Clock3, Home, LogOut, Settings, Users } from "lucide-react";
 
 export type Tab = "home" | "attendance" | "shifts" | "my" | "new" | "review" | "proxy" | "users" | "admin";
@@ -251,38 +250,6 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
               </button>
             );
           })}
-        </div>
-      </nav>
-    </>
-  );
-}
-
-export function AppNavSkeleton() {
-  return (
-    <>
-      <header className="surface-glass sticky top-0 z-40 w-full">
-        <div className="mx-auto flex h-[var(--header-height)] max-w-[var(--ds-layout-max-content-width)] items-center justify-between gap-4 px-[var(--ds-layout-page-gutter)]">
-          <div className="shrink-0">
-            <p className="text-[15px] font-medium tracking-[-0.01em] text-foreground select-none">シフト管理</p>
-            <p className="text-[11px] leading-none text-[var(--on-surface-variant)] select-none mt-0.5">読み込み中</p>
-          </div>
-          <nav className="hidden md:flex items-center gap-1 overflow-x-auto no-scrollbar rounded-full bg-[var(--surface-container-low)] p-1" aria-label="ナビゲーション読み込み">
-            <Skeleton className="h-8 w-20 rounded-full" />
-            <Skeleton className="h-8 w-20 rounded-full" />
-            <Skeleton className="h-8 w-20 rounded-full" />
-          </nav>
-          <div className="shrink-0">
-            <Skeleton className="h-12 w-12 rounded-full" />
-          </div>
-        </div>
-      </header>
-
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--outline-variant)]/90 bg-[color-mix(in_oklab,var(--surface-container-low)_92%,transparent)] px-4 pb-[max(env(safe-area-inset-bottom),4px)] pt-2 md:hidden">
-        <div className="mx-auto grid max-w-[var(--ds-layout-max-content-width)] grid-cols-4 gap-2">
-          <Skeleton className="h-12 rounded-2xl" />
-          <Skeleton className="h-12 rounded-2xl" />
-          <Skeleton className="h-12 rounded-2xl" />
-          <Skeleton className="h-12 rounded-2xl" />
         </div>
       </nav>
     </>

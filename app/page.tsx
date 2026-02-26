@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store";
 import { LoginScreen } from "@/components/login-screen";
-import { AuthLoadingSkeleton } from "@/components/loading-skeletons";
 
 function defaultPath(): string {
   return "/home";
@@ -25,8 +24,8 @@ export default function Page() {
     router.replace(defaultPath());
   }, [currentUser?.id, currentUser?.role, router]);
 
-  if (authLoading) {
-    return <AuthLoadingSkeleton />;
+  if (authLoading && !currentUser) {
+    return <div className="min-h-screen bg-[var(--surface)]" />;
   }
 
   if (!currentUser) {

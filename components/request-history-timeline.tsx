@@ -92,10 +92,7 @@ export function RequestHistoryTimeline({
     <div className="section-divider space-y-2">
       <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">変更履歴</p>
       {loading ? (
-        <div className="space-y-2">
-          <div className="h-14 rounded-lg border border-border bg-muted/40 animate-pulse" />
-          <div className="h-14 rounded-lg border border-border bg-muted/30 animate-pulse" />
-        </div>
+        <p className="text-xs text-muted-foreground">履歴を読み込み中...</p>
       ) : entries.length === 0 ? (
         <p className="text-xs text-muted-foreground">履歴はありません。</p>
       ) : (
