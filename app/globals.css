@@ -137,7 +137,6 @@
   .app-content {
     @apply mx-auto w-full px-[var(--ds-layout-page-gutter)] py-8 md:py-9;
     max-width: var(--ds-layout-max-content-width);
-    animation: md3-enter var(--ds-duration-enter) var(--ds-easing-decelerated);
   }
   .surface-card {
     @apply rounded-[var(--ds-component-card-corner-radius)] border;

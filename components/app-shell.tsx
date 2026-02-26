@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store";
 import { AppNav, Tab } from "./app-nav";
@@ -22,10 +22,14 @@ function defaultTab(): Tab {
   return "home";
 }
 
+function allowedTabs(role: string): Tab[] {
+  if (role === "staff") return ["home", "attendance", "shifts", "my", "new"];
+  if (role === "reviewer") return ["home", "attendance", "shifts", "review", "proxy", "users"];
+  return ["home", "attendance", "shifts", "review", "proxy", "users", "admin"];
+}
+
 function isAllowed(role: string, tab: Tab): boolean {
-  if (role === "staff") return tab === "home" || tab === "attendance" || tab === "shifts" || tab === "my" || tab === "new";
-  if (role === "reviewer") return tab === "home" || tab === "attendance" || tab === "shifts" || tab === "review" || tab === "proxy" || tab === "users";
-  return tab === "home" || tab === "attendance" || tab === "shifts" || tab === "review" || tab === "proxy" || tab === "users" || tab === "admin";
+  return allowedTabs(role).includes(tab);
 }
 
 export function AppShell({ tab, children }: { tab: Tab; children: React.ReactNode }) {
@@ -38,13 +42,28 @@ export function AppShell({ tab, children }: { tab: Tab; children: React.ReactNod
     init();
   }, [init]);
 
+  const navigate = useCallback(
+    (nextTab: Tab) => {
+      const nextPath = PATH_BY_TAB[nextTab];
+      router.push(nextPath, { scroll: false });
+    },
+    [router]
+  );
+
+  useEffect(() => {
+    if (!currentUser) return;
+    for (const nextTab of allowedTabs(currentUser.role)) {
+      void router.prefetch(PATH_BY_TAB[nextTab]);
+    }
+  }, [currentUser, router]);
+
   useEffect(() => {
     if (!currentUser) return;
     if (!isAllowed(currentUser.role, tab)) {
       const next = PATH_BY_TAB[defaultTab()];
-      router.replace(next);
+      router.replace(next, { scroll: false });
     }
-  }, [currentUser?.id, currentUser?.role, tab, router]);
+  }, [currentUser, tab, router]);
 
   if (authLoading && !currentUser) {
     return <div className="min-h-screen bg-[var(--surface)]" />;
@@ -62,7 +81,7 @@ export function AppShell({ tab, children }: { tab: Tab; children: React.ReactNod
     <div className="min-h-screen">
       <AppNav
         activeTab={tab}
-        onTabChange={(t) => router.push(PATH_BY_TAB[t])}
+        onTabChange={navigate}
       />
       <main className="app-shell-main">
         <div className="app-content">

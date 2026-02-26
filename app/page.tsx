@@ -21,8 +21,8 @@ export default function Page() {
 
   useEffect(() => {
     if (!currentUser) return;
-    router.replace(defaultPath());
-  }, [currentUser?.id, currentUser?.role, router]);
+    router.replace(defaultPath(), { scroll: false });
+  }, [currentUser, router]);
 
   if (authLoading && !currentUser) {
     return <div className="min-h-screen bg-[var(--surface)]" />;

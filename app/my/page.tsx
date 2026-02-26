@@ -5,5 +5,5 @@ import { MyRequestsScreen } from "./my-requests-page";
 
 export default function Page() {
   const router = useRouter();
-  return <MyRequestsScreen onNewRequest={() => router.push("/shift/new")} />;
+  return <MyRequestsScreen onNewRequest={() => router.push("/shift/new", { scroll: false })} />;
 }

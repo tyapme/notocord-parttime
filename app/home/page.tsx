@@ -22,14 +22,14 @@ function HomeScreen() {
         <div className="mt-4 flex gap-2">
           <button
             type="button"
-            onClick={() => router.push(shiftPath)}
+            onClick={() => router.push(shiftPath, { scroll: false })}
             className="button-primary px-4 text-sm"
           >
             シフトへ移動
           </button>
           <button
             type="button"
-            onClick={() => router.push("/attendance")}
+            onClick={() => router.push("/attendance", { scroll: false })}
             className="button-secondary px-4 text-sm"
           >
             勤怠を見る

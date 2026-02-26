@@ -5,5 +5,5 @@ import { NewRequestScreen } from "./new-request-page";
 
 export default function Page() {
   const router = useRouter();
-  return <NewRequestScreen onSuccess={() => router.push("/shift/my")} />;
+  return <NewRequestScreen onSuccess={() => router.push("/shift/my", { scroll: false })} />;
 }
