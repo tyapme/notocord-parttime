@@ -221,7 +221,7 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
         )}
       </header>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--outline-variant)]/90 bg-[color-mix(in_oklab,var(--surface-container-low)_92%,transparent)] backdrop-blur-md md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--outline-variant)]/90 bg-[color-mix(in_oklab,var(--surface-container-low)_92%,transparent)] backdrop-blur-md pb-[max(env(safe-area-inset-bottom),4px)] md:hidden">
         <div className="mx-auto grid max-w-[var(--ds-layout-max-content-width)]" style={{ gridTemplateColumns: `repeat(${topNavItems.length}, minmax(0, 1fr))` }}>
           {topNavItems.map((item) => {
             const Icon = topIcon(item);
@@ -231,7 +231,7 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
                 key={`mobile-${item}`}
                 onClick={() => handleTopNavClick(item)}
                 className={cn(
-                  "relative flex h-[72px] flex-col items-center justify-center gap-1 pb-[max(env(safe-area-inset-bottom),0px)]",
+                  "relative flex h-[60px] flex-col items-center justify-center gap-1",
                   isActive ? "text-[var(--primary)]" : "text-[var(--on-surface-variant)]"
                 )}
                 aria-label={topLabel(item)}
@@ -277,7 +277,7 @@ export function AppNavSkeleton() {
         </div>
       </header>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--outline-variant)]/90 bg-[color-mix(in_oklab,var(--surface-container-low)_92%,transparent)] px-4 py-2 md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--outline-variant)]/90 bg-[color-mix(in_oklab,var(--surface-container-low)_92%,transparent)] px-4 pb-[max(env(safe-area-inset-bottom),4px)] pt-2 md:hidden">
         <div className="mx-auto grid max-w-[var(--ds-layout-max-content-width)] grid-cols-4 gap-2">
           <Skeleton className="h-12 rounded-2xl" />
           <Skeleton className="h-12 rounded-2xl" />

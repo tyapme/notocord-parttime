@@ -346,11 +346,11 @@ export function ReviewRequestModal({
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1.5">
                           <label className="text-xs font-medium text-muted-foreground">開始時刻</label>
-                          <input type="time" step={300} value={approvedStart} onChange={(e) => setApprovedStart(e.target.value)} className="input-base text-sm" />
+                          <input type="time" step={300} value={approvedStart} onChange={(e) => setApprovedStart(e.target.value)} className="input-base md:text-sm" />
                         </div>
                         <div className="space-y-1.5">
                           <label className="text-xs font-medium text-muted-foreground">終了時刻</label>
-                          <input type="time" step={300} value={approvedEnd} onChange={(e) => setApprovedEnd(e.target.value)} className="input-base text-sm" />
+                          <input type="time" step={300} value={approvedEnd} onChange={(e) => setApprovedEnd(e.target.value)} className="input-base md:text-sm" />
                         </div>
                       </div>
                       {fixDurationError && <p className="text-xs font-medium text-[var(--status-rejected)]">{fixDurationError}</p>}
@@ -362,7 +362,7 @@ export function ReviewRequestModal({
                       )}
                       <div className="space-y-1.5">
                         <label className="text-xs font-medium text-muted-foreground">変更理由（必須）</label>
-                        <textarea value={changeReason} onChange={(e) => setChangeReason(e.target.value)} rows={2} placeholder="例：業務都合により日程変更" className="input-base resize-none text-sm" />
+                        <textarea value={changeReason} onChange={(e) => setChangeReason(e.target.value)} rows={2} placeholder="例：業務都合により日程変更" className="input-base resize-none md:text-sm" />
                       </div>
                     </div>
                   )}
@@ -370,7 +370,7 @@ export function ReviewRequestModal({
                     <div className="space-y-1.5">
                       <label className="text-xs font-medium text-muted-foreground">メッセージ（任意）</label>
                       <p className="text-[11px] text-muted-foreground">スタッフに表示されます</p>
-                      <textarea value={reviewerNote} onChange={(e) => setReviewerNote(e.target.value)} rows={2} placeholder="必要があればメッセージを入力" className="input-base resize-none text-sm" />
+                      <textarea value={reviewerNote} onChange={(e) => setReviewerNote(e.target.value)} rows={2} placeholder="必要があればメッセージを入力" className="input-base resize-none md:text-sm" />
                     </div>
                   </div>
                   <button
@@ -433,7 +433,7 @@ export function ReviewRequestModal({
                     <div className="space-y-1.5">
                       <label className="text-xs font-medium text-muted-foreground">メッセージ（任意）</label>
                       <p className="text-[11px] text-muted-foreground">スタッフに表示されます</p>
-                      <textarea value={reviewerNote} onChange={(e) => setReviewerNote(e.target.value)} rows={2} placeholder="必要があればメッセージを入力" className="input-base resize-none text-sm" />
+                      <textarea value={reviewerNote} onChange={(e) => setReviewerNote(e.target.value)} rows={2} placeholder="必要があればメッセージを入力" className="input-base resize-none md:text-sm" />
                     </div>
                   </div>
                   <button
@@ -496,7 +496,7 @@ export function ReviewRequestModal({
                           }}
                           rows={3}
                           placeholder="例：人員計画変更のため"
-                          className="input-base resize-none text-sm"
+                          className="input-base resize-none md:text-sm"
                         />
                       </div>
                       {cancelError && <p className="text-xs font-medium text-[var(--status-rejected)]">{cancelError}</p>}
@@ -532,11 +532,11 @@ export function ReviewRequestModal({
                     <div className="grid grid-cols-2 gap-2">
                       <div className="space-y-1.5">
                         <label className="text-xs font-medium text-muted-foreground">開始時刻</label>
-                        <input type="time" step={300} value={approvedStart} onChange={(e) => setApprovedStart(e.target.value)} className="input-base text-sm" />
+                        <input type="time" step={300} value={approvedStart} onChange={(e) => setApprovedStart(e.target.value)} className="input-base md:text-sm" />
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-xs font-medium text-muted-foreground">終了時刻</label>
-                        <input type="time" step={300} value={approvedEnd} onChange={(e) => setApprovedEnd(e.target.value)} className="input-base text-sm" />
+                        <input type="time" step={300} value={approvedEnd} onChange={(e) => setApprovedEnd(e.target.value)} className="input-base md:text-sm" />
                       </div>
                     </div>
                     {fixDurationError && <p className="text-xs font-medium text-[var(--status-rejected)]">{fixDurationError}</p>}
@@ -548,12 +548,12 @@ export function ReviewRequestModal({
                     )}
                     <div className="space-y-1.5">
                       <label className="text-xs font-medium text-muted-foreground">変更理由（申請からズレる場合は必須）</label>
-                      <textarea value={changeReason} onChange={(e) => setChangeReason(e.target.value)} rows={2} placeholder="例：人員調整のため" className="input-base resize-none text-sm" />
+                      <textarea value={changeReason} onChange={(e) => setChangeReason(e.target.value)} rows={2} placeholder="例：人員調整のため" className="input-base resize-none md:text-sm" />
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-xs font-medium text-muted-foreground">メッセージ（任意）</label>
                       <p className="text-[11px] text-muted-foreground">スタッフに表示されます</p>
-                      <textarea value={reviewerNote} onChange={(e) => setReviewerNote(e.target.value)} rows={2} placeholder="補足メッセージを入力" className="input-base resize-none text-sm" />
+                      <textarea value={reviewerNote} onChange={(e) => setReviewerNote(e.target.value)} rows={2} placeholder="補足メッセージを入力" className="input-base resize-none md:text-sm" />
                     </div>
                   </div>
                   {approvedEditError && <p className="text-xs font-medium text-[var(--status-rejected)]">{approvedEditError}</p>}
@@ -609,7 +609,7 @@ export function ReviewRequestModal({
                     <div className="space-y-1.5">
                       <label className="text-xs font-medium text-muted-foreground">メッセージ（任意）</label>
                       <p className="text-[11px] text-muted-foreground">スタッフに表示されます</p>
-                      <textarea value={reviewerNote} onChange={(e) => setReviewerNote(e.target.value)} rows={2} placeholder="補足メッセージを入力" className="input-base resize-none text-sm" />
+                      <textarea value={reviewerNote} onChange={(e) => setReviewerNote(e.target.value)} rows={2} placeholder="補足メッセージを入力" className="input-base resize-none md:text-sm" />
                     </div>
                   </div>
                   {approvedEditError && <p className="text-xs font-medium text-[var(--status-rejected)]">{approvedEditError}</p>}

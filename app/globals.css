@@ -114,7 +114,7 @@
     }
   }
   .app-shell-main {
-    padding-bottom: calc(72px + env(safe-area-inset-bottom) + 1rem);
+    padding-bottom: calc(60px + env(safe-area-inset-bottom) + 0.5rem);
   }
   @media (min-width: 768px) {
     .app-shell-main {

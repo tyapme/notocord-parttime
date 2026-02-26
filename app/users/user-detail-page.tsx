@@ -105,7 +105,7 @@ export function UsersDetailScreen() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="名前・メールで検索"
-              className="input-base h-9 text-sm"
+              className="input-base h-9 md:text-sm"
             />
           </div>
 

@@ -226,7 +226,7 @@ export function StaffRequestModal({
               }}
               rows={3}
               placeholder="例：都合により勤務不可"
-              className="input-base resize-none text-sm"
+              className="input-base resize-none md:text-sm"
             />
           </div>
           {withdrawError && <p className="text-xs font-medium text-[var(--status-rejected)]">{withdrawError}</p>}
