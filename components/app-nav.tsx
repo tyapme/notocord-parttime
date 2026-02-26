@@ -231,9 +231,10 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
                 key={`mobile-${item}`}
                 onClick={() => handleTopNavClick(item)}
                 className={cn(
-                  "relative flex h-[60px] flex-col items-center justify-center gap-1 transition-colors",
+                  "relative flex h-[60px] flex-col items-center justify-center gap-1 bg-transparent transition-colors focus-visible:outline-none",
                   isActive ? "text-[var(--primary)]" : "text-[var(--on-surface-variant)]"
                 )}
+                style={{ WebkitTapHighlightColor: "transparent" }}
                 aria-label={topLabel(item)}
                 title={topLabel(item)}
               >
