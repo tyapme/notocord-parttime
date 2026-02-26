@@ -3,6 +3,7 @@ import { Geist_Mono, Zen_Kaku_Gothic_New } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 import { PwaRegister } from '@/components/pwa-register'
+import { RootRouteShell } from '@/components/root-route-shell'
 
 const zenKakuGothicNew = Zen_Kaku_Gothic_New({
   weight: "400",
@@ -59,7 +60,7 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body className={`${zenKakuGothicNew.variable} ${_geistMono.variable} font-sans antialiased`}>
-        {children}
+        <RootRouteShell>{children}</RootRouteShell>
         <PwaRegister />
         <Analytics />
       </body>

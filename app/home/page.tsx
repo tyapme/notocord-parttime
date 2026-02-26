@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { AppShell } from "@/components/app-shell";
 import { useAppStore } from "@/lib/store";
 
 function HomeScreen() {
@@ -42,9 +41,5 @@ function HomeScreen() {
 }
 
 export default function Page() {
-  return (
-    <AppShell tab="home">
-      <HomeScreen />
-    </AppShell>
-  );
+  return <HomeScreen />;
 }

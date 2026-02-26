@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AppShell } from "@/components/app-shell";
 import { StatusBadge } from "@/components/status-badge";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -629,9 +628,5 @@ function FutureShiftsScreen() {
 }
 
 export default function Page() {
-  return (
-    <AppShell tab="shifts">
-      <FutureShiftsScreen />
-    </AppShell>
-  );
+  return <FutureShiftsScreen />;
 }

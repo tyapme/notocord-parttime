@@ -1,7 +1,5 @@
 "use client";
 
-import { AppShell } from "@/components/app-shell";
-
 function AttendanceScreen() {
   return (
     <div className="w-full space-y-4">
@@ -20,9 +18,5 @@ function AttendanceScreen() {
 }
 
 export default function Page() {
-  return (
-    <AppShell tab="attendance">
-      <AttendanceScreen />
-    </AppShell>
-  );
+  return <AttendanceScreen />;
 }
