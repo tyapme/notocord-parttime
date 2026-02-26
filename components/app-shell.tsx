@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store";
 import { AppNav, Tab } from "./app-nav";
 import { LoginScreen } from "./login-screen";
-import { AuthLoadingSkeleton } from "./loading-skeletons";
 
 const PATH_BY_TAB: Record<Tab, string> = {
   home: "/home",
@@ -17,18 +16,6 @@ const PATH_BY_TAB: Record<Tab, string> = {
   proxy: "/shift/proxy",
   users: "/users",
   admin: "/admin",
-};
-
-const TAB_TITLE: Record<Tab, string> = {
-  home: "ホーム",
-  attendance: "勤怠",
-  shifts: "今後のシフト予定",
-  my: "申請一覧",
-  new: "新規申請",
-  review: "承認待ち",
-  proxy: "代理申請",
-  users: "アルバイト",
-  admin: "設定",
 };
 
 function defaultTab(): Tab {
@@ -59,13 +46,8 @@ export function AppShell({ tab, children }: { tab: Tab; children: React.ReactNod
     }
   }, [currentUser?.id, currentUser?.role, tab, router]);
 
-  if (authLoading) {
-    return (
-      <AuthLoadingSkeleton
-        title={TAB_TITLE[tab]}
-        subtitle="ログイン状態を確認しています"
-      />
-    );
+  if (authLoading && !currentUser) {
+    return <div className="min-h-screen bg-[var(--surface)]" />;
   }
 
   if (!currentUser) {
