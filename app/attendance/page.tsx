@@ -799,7 +799,7 @@ function AttendanceScreen() {
                           <div className="flex flex-1 items-center justify-between">
                             <span className="text-sm text-foreground">{event.label}</span>
                             <span className="text-sm font-medium tabular-nums text-[var(--on-surface-variant)]">
-                              {formatJstTime(event.time.toISOString())}
+                              {formatJstTimeWithSeconds(event.time.toISOString())}
                             </span>
                           </div>
                         </div>
@@ -897,7 +897,7 @@ function AttendanceScreen() {
                           {formatJstDateLabel(session.start_at)}
                         </p>
                         <p className="text-xs text-[var(--on-surface-variant)] mt-0.5">
-                          {formatJstTime(session.start_at)} 〜 {session.end_at ? formatJstTime(session.end_at) : "勤務中"}
+                          {formatJstTimeWithSeconds(session.start_at)} 〜 {session.end_at ? formatJstTimeWithSeconds(session.end_at) : "勤務中"}
                         </p>
                       </div>
                     </div>
