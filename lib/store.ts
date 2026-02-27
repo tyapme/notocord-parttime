@@ -6,8 +6,6 @@ import { supabase } from "@/lib/supabase/client";
 import {
   User,
   Request,
-  FixRequest,
-  FlexRequest,
   FixDecisionType,
   DecisionType,
   FlexDecisionType,
@@ -163,6 +161,11 @@ function syncRequestUserNames(requests: Request[], users: User[]): Request[] {
 }
 
 let authSubscription: { unsubscribe: () => void } | null = null;
+let fetchRequestsInFlight: Promise<void> | null = null;
+let fetchUsersInFlight: Promise<void> | null = null;
+
+const REQUESTS_CACHE_TTL_MS = 15_000;
+const USERS_CACHE_TTL_MS = 30_000;
 
 interface AppState {
   currentUser: User | null;
@@ -174,6 +177,8 @@ interface AppState {
   initialized: boolean;
   authLoading: boolean;
   dataLoading: boolean;
+  lastRequestsFetchedAt: number;
+  lastUsersFetchedAt: number;
   error: string | null;
 
   init: () => Promise<void>;
@@ -182,9 +187,9 @@ interface AppState {
   logout: () => Promise<void>;
 
   refresh: () => Promise<void>;
-  fetchRequests: () => Promise<void>;
+  fetchRequests: (options?: { force?: boolean }) => Promise<void>;
   fetchRequestHistory: (requestId: string) => Promise<void>;
-  fetchUsers: () => Promise<void>;
+  fetchUsers: (options?: { force?: boolean }) => Promise<void>;
 
   addFixRequest: (payload: { startAt: string; endAt: string; note?: string }) => Promise<boolean>;
   addFlexRequest: (payload: { dateInWeek: string; requestedHours: number; note?: string }) => Promise<boolean>;
@@ -232,6 +237,8 @@ export const useAppStore = create<AppState>()((set, get) => ({
   initialized: false,
   authLoading: true,
   dataLoading: false,
+  lastRequestsFetchedAt: 0,
+  lastUsersFetchedAt: 0,
   error: null,
 
   init: async () => {
@@ -245,7 +252,15 @@ export const useAppStore = create<AppState>()((set, get) => ({
     if (session) {
       await loadProfileAndData(set, get, session);
     } else {
-      set({ currentUser: null, users: [], requests: [], requestHistories: {}, historyLoadingByRequestId: {} });
+      set({
+        currentUser: null,
+        users: [],
+        requests: [],
+        requestHistories: {},
+        historyLoadingByRequestId: {},
+        lastRequestsFetchedAt: 0,
+        lastUsersFetchedAt: 0,
+      });
     }
     set({ authLoading: false });
 
@@ -255,7 +270,15 @@ export const useAppStore = create<AppState>()((set, get) => ({
         if (newSession) {
           await loadProfileAndData(set, get, newSession);
         } else {
-          set({ currentUser: null, users: [], requests: [], requestHistories: {}, historyLoadingByRequestId: {} });
+          set({
+            currentUser: null,
+            users: [],
+            requests: [],
+            requestHistories: {},
+            historyLoadingByRequestId: {},
+            lastRequestsFetchedAt: 0,
+            lastUsersFetchedAt: 0,
+          });
         }
         set({ authLoading: false });
       });
@@ -280,7 +303,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
         code: data?.code,
         expiresAt: data?.expiresAt,
       };
-    } catch (err) {
+    } catch {
       return { ok: false, error: "認証コードの発行に失敗しました" };
     }
   },
@@ -304,62 +327,99 @@ export const useAppStore = create<AppState>()((set, get) => ({
 
   logout: async () => {
     await supabase.auth.signOut();
-    set({ currentUser: null, session: null, users: [], requests: [], requestHistories: {}, historyLoadingByRequestId: {} });
+    set({
+      currentUser: null,
+      session: null,
+      users: [],
+      requests: [],
+      requestHistories: {},
+      historyLoadingByRequestId: {},
+      lastRequestsFetchedAt: 0,
+      lastUsersFetchedAt: 0,
+    });
   },
 
   refresh: async () => {
-    await Promise.all([get().fetchRequests(), get().fetchUsers()]);
+    await Promise.all([get().fetchRequests({ force: true }), get().fetchUsers({ force: true })]);
   },
 
-  fetchRequests: async () => {
+  fetchRequests: async ({ force = false } = {}) => {
     if (!get().session) {
-      set({ requests: [], requestHistories: {}, historyLoadingByRequestId: {} });
+      set({ requests: [], requestHistories: {}, historyLoadingByRequestId: {}, lastRequestsFetchedAt: 0 });
       return;
     }
-    set({ dataLoading: true });
-    const { data, error } = await supabase
-      .from("shift_requests")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) {
-      set({ dataLoading: false, error: error.message });
-      return;
-    }
-    const rows = (data || []) as ShiftRequestRow[];
-    const userIds = Array.from(
-      new Set(
-        rows
-          .flatMap((r) => [r.user_id, r.created_by, r.reviewed_by])
-          .filter((id): id is string => Boolean(id))
-      )
-    );
-    const userMap = new Map<string, { name: string | null; email: string | null }>();
 
-    if (userIds.length > 0) {
-      const { data: profiles, error: profilesError } = await supabase
-        .from("profiles")
-        .select("id,name,email")
-        .in("id", userIds);
-      if (!profilesError && profiles) {
-        for (const p of profiles as Array<{ id: string; name: string | null; email: string | null }>) {
-          userMap.set(p.id, { name: p.name, email: p.email });
+    const state = get();
+    const now = Date.now();
+    const isFresh = now - state.lastRequestsFetchedAt < REQUESTS_CACHE_TTL_MS;
+    if (!force && isFresh && state.requests.length > 0) {
+      return;
+    }
+
+    if (fetchRequestsInFlight) {
+      await fetchRequestsInFlight;
+      return;
+    }
+
+    fetchRequestsInFlight = (async () => {
+      set({ dataLoading: true });
+      const { data, error } = await supabase
+        .from("shift_requests")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) {
+        set({ dataLoading: false, error: error.message });
+        return;
+      }
+      const rows = (data || []) as ShiftRequestRow[];
+      const userIds = Array.from(
+        new Set(
+          rows
+            .flatMap((r) => [r.user_id, r.created_by, r.reviewed_by])
+            .filter((id): id is string => Boolean(id))
+        )
+      );
+      const userMap = new Map<string, { name: string | null; email: string | null }>();
+
+      if (userIds.length > 0) {
+        const { data: profiles, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id,name,email")
+          .in("id", userIds);
+        if (!profilesError && profiles) {
+          for (const p of profiles as Array<{ id: string; name: string | null; email: string | null }>) {
+            userMap.set(p.id, { name: p.name, email: p.email });
+          }
         }
       }
-    }
 
-    const mapped = rows.map((row) => {
-      const user = userMap.get(row.user_id);
-      const creator = userMap.get(row.created_by);
-      const reviewer = row.reviewed_by ? userMap.get(row.reviewed_by) : undefined;
-      return mapRequestRow({
-        ...row,
-        user: user ? { name: user.name, email: user.email } : undefined,
-        creator: creator ? { name: creator.name } : undefined,
-        reviewer: reviewer ? { name: reviewer.name } : undefined,
+      const mapped = rows.map((row) => {
+        const user = userMap.get(row.user_id);
+        const creator = userMap.get(row.created_by);
+        const reviewer = row.reviewed_by ? userMap.get(row.reviewed_by) : undefined;
+        return mapRequestRow({
+          ...row,
+          user: user ? { name: user.name, email: user.email } : undefined,
+          creator: creator ? { name: creator.name } : undefined,
+          reviewer: reviewer ? { name: reviewer.name } : undefined,
+        });
       });
-    });
-    const synced = syncRequestUserNames(mapped, get().users);
-    set({ requests: synced, dataLoading: false, error: null, requestHistories: {}, historyLoadingByRequestId: {} });
+      const synced = syncRequestUserNames(mapped, get().users);
+      set({
+        requests: synced,
+        dataLoading: false,
+        error: null,
+        requestHistories: {},
+        historyLoadingByRequestId: {},
+        lastRequestsFetchedAt: Date.now(),
+      });
+    })();
+
+    try {
+      await fetchRequestsInFlight;
+    } finally {
+      fetchRequestsInFlight = null;
+    }
   },
 
   fetchRequestHistory: async (requestId) => {
@@ -436,22 +496,44 @@ export const useAppStore = create<AppState>()((set, get) => ({
     }));
   },
 
-  fetchUsers: async () => {
+  fetchUsers: async ({ force = false } = {}) => {
     const role = get().currentUser?.role;
     if (!role || role === "staff") {
-      set({ users: [] });
+      set({ users: [], lastUsersFetchedAt: Date.now() });
       return;
     }
-    const { data, error } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
-    if (error) {
-      set({ error: error.message });
+
+    const state = get();
+    const now = Date.now();
+    const isFresh = now - state.lastUsersFetchedAt < USERS_CACHE_TTL_MS;
+    if (!force && isFresh && state.users.length > 0) {
       return;
     }
-    const users = (data || []).map(mapProfile);
-    set((state) => ({
-      users,
-      requests: syncRequestUserNames(state.requests, users),
-    }));
+
+    if (fetchUsersInFlight) {
+      await fetchUsersInFlight;
+      return;
+    }
+
+    fetchUsersInFlight = (async () => {
+      const { data, error } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
+      if (error) {
+        set({ error: error.message });
+        return;
+      }
+      const users = (data || []).map(mapProfile);
+      set((prev) => ({
+        users,
+        requests: syncRequestUserNames(prev.requests, users),
+        lastUsersFetchedAt: Date.now(),
+      }));
+    })();
+
+    try {
+      await fetchUsersInFlight;
+    } finally {
+      fetchUsersInFlight = null;
+    }
   },
 
   addFixRequest: async ({ startAt, endAt, note }) => {
@@ -464,7 +546,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       set({ error: error.message });
       return false;
     }
-    await get().fetchRequests();
+    await get().fetchRequests({ force: true });
     return true;
   },
 
@@ -478,7 +560,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       set({ error: error.message });
       return false;
     }
-    await get().fetchRequests();
+    await get().fetchRequests({ force: true });
     return true;
   },
 
@@ -493,7 +575,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       set({ error: error.message });
       return false;
     }
-    await get().fetchRequests();
+    await get().fetchRequests({ force: true });
     return true;
   },
 
@@ -508,7 +590,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       set({ error: error.message });
       return false;
     }
-    await get().fetchRequests();
+    await get().fetchRequests({ force: true });
     return true;
   },
 
@@ -523,7 +605,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       set({ error: error.message });
       return false;
     }
-    await get().fetchRequests();
+    await get().fetchRequests({ force: true });
     return true;
   },
 
@@ -538,7 +620,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       set({ error: error.message });
       return false;
     }
-    await get().fetchRequests();
+    await get().fetchRequests({ force: true });
     return true;
   },
 
@@ -553,7 +635,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       set({ error: error.message });
       return false;
     }
-    await get().fetchRequests();
+    await get().fetchRequests({ force: true });
     return true;
   },
 
@@ -570,7 +652,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       set({ error: error.message });
       return false;
     }
-    await get().fetchRequests();
+    await get().fetchRequests({ force: true });
     return true;
   },
 
@@ -585,7 +667,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       set({ error: error.message });
       return false;
     }
-    await get().fetchRequests();
+    await get().fetchRequests({ force: true });
     return true;
   },
 
@@ -598,7 +680,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       set({ error: error.message });
       return false;
     }
-    await get().fetchRequests();
+    await get().fetchRequests({ force: true });
     return true;
   },
 
@@ -613,7 +695,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       set({ error: error.message });
       return false;
     }
-    await get().fetchRequests();
+    await get().fetchRequests({ force: true });
     return true;
   },
 
@@ -628,7 +710,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       set({ error: error.message });
       return false;
     }
-    await get().fetchRequests();
+    await get().fetchRequests({ force: true });
     return true;
   },
 
@@ -645,7 +727,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       set({ error: data?.error || "作成に失敗しました" });
       return false;
     }
-    await get().fetchUsers();
+    await get().fetchUsers({ force: true });
     return true;
   },
 
@@ -662,7 +744,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       set({ error: data?.error || "更新に失敗しました" });
       return false;
     }
-    await get().fetchUsers();
+    await get().fetchUsers({ force: true });
     return true;
   },
 
@@ -679,7 +761,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       set({ error: data?.error || "更新に失敗しました" });
       return false;
     }
-    await get().fetchUsers();
+    await get().fetchUsers({ force: true });
     return true;
   },
 }));
@@ -695,12 +777,28 @@ async function loadProfileAndData(
     .eq("id", session.user.id)
     .single();
   if (error || !profile) {
-    set({ currentUser: null, users: [], requests: [], requestHistories: {}, historyLoadingByRequestId: {} });
+    set({
+      currentUser: null,
+      users: [],
+      requests: [],
+      requestHistories: {},
+      historyLoadingByRequestId: {},
+      lastRequestsFetchedAt: 0,
+      lastUsersFetchedAt: 0,
+    });
     return;
   }
   if (!profile.active) {
     await supabase.auth.signOut();
-    set({ currentUser: null, users: [], requests: [], requestHistories: {}, historyLoadingByRequestId: {} });
+    set({
+      currentUser: null,
+      users: [],
+      requests: [],
+      requestHistories: {},
+      historyLoadingByRequestId: {},
+      lastRequestsFetchedAt: 0,
+      lastUsersFetchedAt: 0,
+    });
     return;
   }
   set({ currentUser: mapProfile(profile) });
