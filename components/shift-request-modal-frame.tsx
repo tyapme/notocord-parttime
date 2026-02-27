@@ -67,21 +67,21 @@ export function ShiftRequestModalFrame({
 }) {
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-foreground/15 backdrop-blur-sm px-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
+      className="fixed inset-0 z-50 bg-foreground/15 backdrop-blur-sm"
+      onClick={onClose}
     >
-      <FrameContent
-        onClose={onClose}
-        header={header}
-        status={status}
-        footer={footer}
-        maxWidthClassName={cn("modal-surface", maxWidthClassName ?? "max-w-sm")}
-        bodyClassName={bodyClassName}
-      >
-        {children}
-      </FrameContent>
+      <div className="grid min-h-full w-full place-items-center px-4 py-6" onClick={(e) => e.stopPropagation()}>
+        <FrameContent
+          onClose={onClose}
+          header={header}
+          status={status}
+          footer={footer}
+          maxWidthClassName={cn("modal-surface", maxWidthClassName ?? "max-w-sm")}
+          bodyClassName={bodyClassName}
+        >
+          {children}
+        </FrameContent>
+      </div>
     </div>
   );
 }
