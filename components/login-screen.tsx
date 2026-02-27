@@ -139,12 +139,6 @@ export function LoginScreen() {
           </form>
         ) : (
           <div className="space-y-4">
-            <div className="rounded-[var(--ds-radius-md)] border border-[var(--outline-variant)] bg-[var(--surface-container)] px-3.5 py-3">
-              <p className="text-xs text-[var(--on-surface-variant)]">認証コード送信先</p>
-              <p className="mt-1 text-sm font-medium text-foreground">{activeEmail}</p>
-              <p className="mt-2 text-xs text-[var(--on-surface-variant)]">6桁入力で自動サインインします</p>
-            </div>
-
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground" htmlFor="otp-code">
                 認証コード

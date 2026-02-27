@@ -15,11 +15,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: result.error }, { status: result.status });
     }
 
+    const siteUrl = String(process.env.NEXT_PUBLIC_SITE_URL || "").trim();
+    const emailRedirectTo = siteUrl ? `${siteUrl.replace(/\/$/, "")}/auth/confirm` : undefined;
+
     const anon = await createRouteHandlerClient();
     const { error } = await anon.auth.signInWithOtp({
       email,
       options: {
         shouldCreateUser: false,
+        ...(emailRedirectTo ? { emailRedirectTo } : {}),
       },
     });
     if (error) {
