@@ -93,7 +93,7 @@ export function ShiftRequestModalFrame({
         header={header}
         status={status}
         footer={footer}
-        maxWidthClassName={cn("modal-surface", maxWidthClassName)}
+        maxWidthClassName={cn("modal-surface", maxWidthClassName ?? "max-w-sm")}
         bodyClassName={bodyClassName}
       >
         {children}
