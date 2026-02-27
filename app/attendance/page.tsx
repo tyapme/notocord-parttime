@@ -1288,7 +1288,7 @@ function AttendanceScreen() {
                   placeholder="やったことを追加"
                   value={modalTaskInput}
                   onChange={(e) => setModalTaskInput(e.target.value)}
-                  className="flex-1 rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-3 py-2 text-sm text-foreground placeholder:text-[var(--on-surface-variant)]/50 focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+                  className="flex-1 min-w-0 rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-3 py-2 text-sm text-foreground placeholder:text-[var(--on-surface-variant)]/50 focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
                   onKeyDown={(e) => {
                     if (e.nativeEvent.isComposing) return;
                     if (e.key === "Enter" && modalTaskInput.trim()) {
@@ -1310,7 +1310,7 @@ function AttendanceScreen() {
                     setHomeTaskDraft(formatTaskLines(tasks));
                     setModalTaskInput("");
                   }}
-                  className="rounded-lg bg-[var(--primary)] px-3 py-2 text-sm font-semibold text-[var(--primary-foreground)] transition-colors hover:bg-[var(--primary)]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="shrink-0 rounded-lg bg-[var(--primary)] px-3 py-2 text-sm font-semibold text-[var(--primary-foreground)] transition-colors hover:bg-[var(--primary)]/90 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   追加
                 </button>
