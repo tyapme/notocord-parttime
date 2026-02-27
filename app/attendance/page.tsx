@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Play,
   Square,
@@ -11,9 +11,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   Pencil,
-  ListTodo,
   Users,
-  Save,
   Pause,
 } from "lucide-react";
 import { SelectField } from "@/components/select-field";
@@ -42,7 +40,7 @@ import {
   saveSessionTasks as saveSessionTasksDb,
 } from "@/lib/attendance-db";
 import { supabase } from "@/lib/supabase/client";
-import { formatJstDateLabel, formatJstDateTime, formatJstTime } from "@/lib/datetime";
+import { formatJstDateLabel, formatJstDateTime, formatJstTime, formatJstTimeWithSeconds } from "@/lib/datetime";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -261,6 +259,8 @@ function AttendanceScreen() {
   const [periodKey, setPeriodKey] = useState(periodOptions[0]?.key ?? "");
 
   const [homeTaskDraft, setHomeTaskDraft] = useState("");
+  const [taskSaveStatus, setTaskSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [taskDraftBySessionId, setTaskDraftBySessionId] = useState<Record<string, string>>({});
 
   const [editSessionId, setEditSessionId] = useState<string | null>(null);
@@ -524,17 +524,6 @@ function AttendanceScreen() {
     })),
   ];
 
-  if (loading) {
-    return (
-      <div className="w-full space-y-4">
-        <div>
-          <h1 className="page-title">勤怠</h1>
-          <p className="page-subtitle">読み込み中...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="w-full space-y-4">
       <div>
@@ -555,18 +544,18 @@ function AttendanceScreen() {
       {activeTab === "home" && role === "staff" && (
         <div className="space-y-4">
           {/* 現在時刻ヒーロー */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary)]/80 p-6 text-[var(--primary-foreground)]">
+          <div className="rounded-2xl bg-[var(--primary-container)] p-6">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm opacity-80">{formatCurrentDateJst(currentTime)}</p>
-                <p className="text-5xl font-bold tracking-tight mt-1 tabular-nums">
+                <p className="text-sm text-[var(--primary)]">{formatCurrentDateJst(currentTime)}</p>
+                <p className="text-5xl font-bold tracking-tight mt-1 tabular-nums text-[var(--primary)]">
                   {formatCurrentTimeJst(currentTime)}
                 </p>
               </div>
               {myStatus !== "off" && myOpenSession && (
                 <div className="text-right">
-                  <p className="text-xs opacity-70">実働時間</p>
-                  <p className="text-2xl font-bold tabular-nums mt-0.5">
+                  <p className="text-xs text-[var(--primary)]/70">実働時間</p>
+                  <p className="text-2xl font-bold tabular-nums mt-0.5 text-[var(--primary)]">
                     {formatElapsedTime(calculateWorkingSeconds(myOpenSession, currentTime))}
                   </p>
                 </div>
@@ -577,44 +566,44 @@ function AttendanceScreen() {
           {/* ステータスカード */}
           <div
             className={cn(
-              "relative overflow-hidden rounded-2xl p-5",
+              "rounded-xl px-4 py-3",
               myStatus === "working" && "bg-[var(--status-approved)]/10 border border-[var(--status-approved)]/20",
               myStatus === "on_break" && "bg-[var(--primary)]/10 border border-[var(--primary)]/20",
-              myStatus === "off" && "surface-card-subtle"
+              myStatus === "off" && "bg-[var(--surface-container)]"
             )}
           >
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <div
                   className={cn(
-                    "flex h-12 w-12 items-center justify-center rounded-xl",
+                    "flex h-9 w-9 items-center justify-center rounded-lg",
                     myStatus === "working" && "bg-[var(--status-approved)]/20",
                     myStatus === "on_break" && "bg-[var(--primary)]/20",
                     myStatus === "off" && "bg-[var(--surface-container-high)]"
                   )}
                 >
-                  {myStatus === "working" && <Play className="h-6 w-6 text-[var(--status-approved)]" />}
-                  {myStatus === "on_break" && <Pause className="h-6 w-6 text-[var(--primary)]" />}
-                  {myStatus === "off" && <Clock className="h-6 w-6 text-[var(--on-surface-variant)]" />}
+                  {myStatus === "working" && <Play className="h-4 w-4 text-[var(--status-approved)]" />}
+                  {myStatus === "on_break" && <Pause className="h-4 w-4 text-[var(--primary)]" />}
+                  {myStatus === "off" && <Clock className="h-4 w-4 text-[var(--on-surface-variant)]" />}
                 </div>
                 <div>
-                  <p className="text-xs text-[var(--on-surface-variant)]">ステータス</p>
-                  <p className="text-lg font-bold text-foreground">{statusLabel(myStatus)}</p>
+                  <p className="text-[10px] text-[var(--on-surface-variant)]">ステータス</p>
+                  <p className="text-sm font-bold text-foreground">{statusLabel(myStatus)}</p>
                 </div>
               </div>
               {myStatus !== "off" && myOpenSession && (
-                <div className="text-right">
-                  <p className="text-xs text-[var(--on-surface-variant)]">出勤</p>
-                  <p className="text-lg font-semibold text-foreground">{formatJstTime(myOpenSession.start_at)}</p>
+                <div className="text-right pr-1">
+                  <p className="text-[10px] text-[var(--on-surface-variant)]">出勤</p>
+                  <p className="text-sm font-semibold tabular-nums text-foreground">{formatJstTimeWithSeconds(myOpenSession.start_at)}</p>
                 </div>
               )}
             </div>
 
             {isClosingDay && (
-              <div className="mt-4 flex items-center gap-2 rounded-lg bg-[var(--status-pending)]/10 px-3 py-2">
-                <AlertTriangle className="h-4 w-4 text-[var(--status-pending)] shrink-0" />
-                <span className="text-xs text-[var(--status-pending)]">
-                  今日は締め日です。日跨ぎ勤務はできません。
+              <div className="mt-3 flex items-center gap-2 rounded-md bg-[var(--status-pending)]/10 px-2.5 py-1.5">
+                <AlertTriangle className="h-3.5 w-3.5 text-[var(--status-pending)] shrink-0" />
+                <span className="text-[11px] text-[var(--status-pending)]">
+                  締め日のため日跨ぎ勤務不可
                 </span>
               </div>
             )}
@@ -695,121 +684,139 @@ function AttendanceScreen() {
             </div>
           )}
 
-          {/* アクションボタン群 */}
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={handleClockIn}
-              disabled={myStatus !== "off"}
-              className={cn(
-                "group relative flex flex-col items-center justify-center gap-2 rounded-2xl p-5 transition-all",
-                myStatus === "off"
-                  ? "bg-[var(--primary)] text-[var(--primary-foreground)] hover:shadow-lg hover:shadow-[var(--primary)]/20 active:scale-[0.98]"
-                  : "bg-muted/50 text-muted-foreground cursor-not-allowed"
-              )}
-            >
-              <div className={cn(
-                "flex h-12 w-12 items-center justify-center rounded-xl transition-transform",
-                myStatus === "off" ? "bg-white/20 group-hover:scale-110" : "bg-muted"
-              )}>
-                <Play className="h-6 w-6" />
-              </div>
-              <span className="text-sm font-semibold">出勤</span>
-            </button>
+          {/* アクションボタン - 状態に応じて必要なものだけ表示 */}
+          <div className={cn(
+            "grid gap-2",
+            myStatus === "off" ? "grid-cols-1" : "grid-cols-2"
+          )}>
+            {/* 未出勤 → 出勤ボタンのみ */}
+            {myStatus === "off" && (
+              <button
+                type="button"
+                onClick={handleClockIn}
+                className="group flex items-center justify-center gap-2 rounded-xl bg-[var(--primary)] py-3 px-4 text-[var(--primary-foreground)] transition-all hover:bg-[var(--primary)]/90 active:scale-[0.98]"
+              >
+                <Play className="h-5 w-5" />
+                <span className="text-sm font-semibold">出勤する</span>
+              </button>
+            )}
 
-            <button
-              type="button"
-              onClick={handleClockOut}
-              disabled={myStatus === "off"}
-              className={cn(
-                "group relative flex flex-col items-center justify-center gap-2 rounded-2xl border p-5 transition-all",
-                myStatus !== "off"
-                  ? "border-[var(--outline-variant)] bg-[var(--surface-container)] text-foreground hover:bg-[var(--surface-container-high)] active:scale-[0.98]"
-                  : "border-transparent bg-muted/50 text-muted-foreground cursor-not-allowed"
-              )}
-            >
-              <div className={cn(
-                "flex h-12 w-12 items-center justify-center rounded-xl transition-transform",
-                myStatus !== "off" ? "bg-[var(--surface-container-highest)] group-hover:scale-110" : "bg-muted"
-              )}>
-                <Square className="h-6 w-6" />
-              </div>
-              <span className="text-sm font-semibold">退勤</span>
-            </button>
+            {/* 勤務中 → 休憩・退勤 */}
+            {myStatus === "working" && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleBreakStart}
+                  className="group flex items-center justify-center gap-2 rounded-xl border border-[var(--primary)]/30 bg-[var(--primary)]/10 py-3 px-4 text-foreground transition-all hover:bg-[var(--primary)]/15 active:scale-[0.98]"
+                >
+                  <Coffee className="h-5 w-5 text-[var(--primary)]" />
+                  <span className="text-sm font-semibold">休憩</span>
+                </button>
 
-            <button
-              type="button"
-              onClick={handleBreakStart}
-              disabled={myStatus !== "working"}
-              className={cn(
-                "group relative flex flex-col items-center justify-center gap-2 rounded-2xl border p-5 transition-all",
-                myStatus === "working"
-                  ? "border-[var(--primary)]/30 bg-[var(--primary)]/10 text-foreground hover:bg-[var(--primary)]/15 active:scale-[0.98]"
-                  : "border-transparent bg-muted/50 text-muted-foreground cursor-not-allowed"
-              )}
-            >
-              <div className={cn(
-                "flex h-12 w-12 items-center justify-center rounded-xl transition-transform",
-                myStatus === "working" ? "bg-[var(--primary)]/20 group-hover:scale-110" : "bg-muted"
-              )}>
-                <Coffee className="h-6 w-6" />
-              </div>
-              <span className="text-sm font-semibold">休憩開始</span>
-            </button>
+                <button
+                  type="button"
+                  onClick={handleClockOut}
+                  className="group flex items-center justify-center gap-2 rounded-xl border border-[var(--outline-variant)] bg-[var(--surface-container)] py-3 px-4 text-foreground transition-all hover:bg-[var(--surface-container-high)] active:scale-[0.98]"
+                >
+                  <Square className="h-5 w-5" />
+                  <span className="text-sm font-semibold">退勤</span>
+                </button>
+              </>
+            )}
 
-            <button
-              type="button"
-              onClick={handleBreakEnd}
-              disabled={myStatus !== "on_break"}
-              className={cn(
-                "group relative flex flex-col items-center justify-center gap-2 rounded-2xl border p-5 transition-all",
-                myStatus === "on_break"
-                  ? "border-[var(--primary)]/30 bg-[var(--primary)]/10 text-foreground hover:bg-[var(--primary)]/15 active:scale-[0.98]"
-                  : "border-transparent bg-muted/50 text-muted-foreground cursor-not-allowed"
-              )}
-            >
-              <div className={cn(
-                "flex h-12 w-12 items-center justify-center rounded-xl transition-transform",
-                myStatus === "on_break" ? "bg-[var(--primary)]/20 group-hover:scale-110" : "bg-muted"
-              )}>
-                <Play className="h-6 w-6" />
-              </div>
-              <span className="text-sm font-semibold">休憩終了</span>
-            </button>
+            {/* 休憩中 → 休憩終了のみ */}
+            {myStatus === "on_break" && (
+              <button
+                type="button"
+                onClick={handleBreakEnd}
+                className="group col-span-2 flex items-center justify-center gap-2 rounded-xl bg-[var(--primary)] py-3 px-4 text-[var(--primary-foreground)] transition-all hover:bg-[var(--primary)]/90 active:scale-[0.98]"
+              >
+                <Play className="h-5 w-5" />
+                <span className="text-sm font-semibold">休憩終了</span>
+              </button>
+            )}
           </div>
 
           {/* タスク入力 */}
           {myStatus !== "off" && (
-            <div className="rounded-2xl bg-[var(--surface-container)] p-5">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <ListTodo className="h-4 w-4 text-[var(--primary)]" />
-                  <span className="text-sm font-semibold text-foreground">やったこと</span>
+            <div className="rounded-2xl bg-[var(--surface-container)] p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-sm font-semibold text-foreground">やったこと</span>
+                {taskSaveStatus === "saving" && (
+                  <span className="text-xs text-[var(--primary)] animate-pulse">保存中...</span>
+                )}
+                {taskSaveStatus === "saved" && (
+                  <span className="text-xs text-[var(--status-approved)]">✓</span>
+                )}
+              </div>
+              
+              {/* 入力済みタスクをチップで表示 */}
+              {homeTaskDraft && parseTaskLines(homeTaskDraft).length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {parseTaskLines(homeTaskDraft).map((task, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-[var(--primary)]/10 px-3 py-1.5 text-sm text-foreground"
+                    >
+                      {task}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const tasks = parseTaskLines(homeTaskDraft);
+                          tasks.splice(idx, 1);
+                          const newValue = formatTaskLines(tasks);
+                          setHomeTaskDraft(newValue);
+                          setTaskSaveStatus("saving");
+                          saveCurrentTasksDb(tasks).then((result) => {
+                            if (result.ok) {
+                              setTaskSaveStatus("saved");
+                              setTimeout(() => setTaskSaveStatus("idle"), 3000);
+                            } else {
+                              setError(result.error ?? "保存に失敗しました");
+                              setTaskSaveStatus("idle");
+                            }
+                          });
+                        }}
+                        className="ml-0.5 rounded-full p-0.5 hover:bg-[var(--primary)]/20 transition-colors"
+                      >
+                        <svg className="h-3.5 w-3.5 text-[var(--on-surface-variant)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </span>
+                  ))}
                 </div>
-                <span className="text-xs text-[var(--on-surface-variant)]">
-                  {homeTaskDraft.split("\n").filter((line) => line.trim()).length} 件
-                </span>
-              </div>
-              <div className="relative">
-                <textarea
-                  value={homeTaskDraft}
-                  onChange={(event) => {
-                    setHomeTaskDraft(event.target.value);
-                    setError("");
-                  }}
-                  rows={3}
-                  placeholder="・接客対応&#10;・在庫確認&#10;・レジ締め"
-                  className="w-full rounded-xl border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-4 py-3 text-sm text-foreground placeholder:text-[var(--on-surface-variant)]/50 focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 resize-none"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={handleSaveCurrentTasks}
-                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--primary)] py-2.5 text-sm font-semibold text-[var(--primary-foreground)] transition-all hover:shadow-md active:scale-[0.98]"
-              >
-                <Save className="h-4 w-4" />
-                保存
-              </button>
+              )}
+              
+              {/* 1行入力 */}
+              <input
+                type="text"
+                placeholder="タスクを入力してEnter"
+                className="w-full rounded-xl border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-4 py-2.5 text-sm text-foreground placeholder:text-[var(--on-surface-variant)]/50 focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && e.currentTarget.value.trim()) {
+                    e.preventDefault();
+                    const newTask = e.currentTarget.value.trim();
+                    const tasks = parseTaskLines(homeTaskDraft);
+                    tasks.push(newTask);
+                    const newValue = formatTaskLines(tasks);
+                    setHomeTaskDraft(newValue);
+                    e.currentTarget.value = "";
+                    
+                    // 即保存
+                    setTaskSaveStatus("saving");
+                    saveCurrentTasksDb(tasks).then((result) => {
+                      if (result.ok) {
+                        setTaskSaveStatus("saved");
+                        setTimeout(() => setTaskSaveStatus("idle"), 3000);
+                      } else {
+                        setError(result.error ?? "保存に失敗しました");
+                        setTaskSaveStatus("idle");
+                      }
+                    });
+                  }
+                }}
+              />
             </div>
           )}
         </div>

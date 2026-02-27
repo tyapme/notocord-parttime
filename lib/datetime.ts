@@ -31,6 +31,16 @@ export function formatJstTime(iso: string): string {
   }).format(new Date(iso));
 }
 
+export function formatJstTimeWithSeconds(iso: string): string {
+  return new Intl.DateTimeFormat("ja-JP", {
+    timeZone: DEFAULT_TZ,
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(new Date(iso));
+}
+
 export function formatJstDateTimeRange(startIso: string, endIso: string): string {
   const startDate = formatJstDateLabel(startIso);
   const endDate = formatJstDateLabel(endIso);
