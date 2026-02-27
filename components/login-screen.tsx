@@ -21,6 +21,7 @@ export function LoginScreen() {
   const [sendingCode, setSendingCode] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  const canSubmitCode = code.replace(/\D/g, "").length === OTP_LENGTH;
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -65,7 +66,10 @@ export function LoginScreen() {
   const handleVerify = async (rawCode: string) => {
     if (verifying) return;
     const normalizedCode = rawCode.replace(/\D/g, "").slice(0, OTP_LENGTH);
-    if (normalizedCode.length !== OTP_LENGTH) return;
+    if (normalizedCode.length !== OTP_LENGTH) {
+      setError(`認証コードは${OTP_LENGTH}桁で入力してください`);
+      return;
+    }
     if (!activeEmail) {
       setError("メールアドレスを入力し直してください");
       setStep("email");
@@ -78,7 +82,6 @@ export function LoginScreen() {
     setVerifying(false);
     if (!res.ok) {
       setError(res.error || "サインインに失敗しました");
-      setCode("");
     }
   };
 
@@ -103,7 +106,7 @@ export function LoginScreen() {
         </div>
 
         {step === "email" ? (
-          <form onSubmit={handleSendCode} className="space-y-4" noValidate>
+          <form onSubmit={handleSendCode} className="space-y-5" noValidate>
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground" htmlFor="email">
                 メールアドレス
@@ -118,7 +121,10 @@ export function LoginScreen() {
                   setError("");
                 }}
                 placeholder="user@example.com"
-                className={cn("input-base", error && "border-[var(--status-rejected)]")}
+                className={cn(
+                  "input-base border-[var(--outline)] bg-[var(--surface-container-high)] px-4 py-3",
+                  error && "border-[var(--status-rejected)]"
+                )}
                 style={{ fontSize: "16px" }}
               />
             </div>
@@ -138,8 +144,8 @@ export function LoginScreen() {
             </button>
           </form>
         ) : (
-          <div className="space-y-4">
-            <div className="space-y-2">
+          <div className="space-y-6">
+            <div className="space-y-3">
               <label className="text-sm font-medium text-foreground" htmlFor="otp-code">
                 認証コード
               </label>
@@ -159,25 +165,44 @@ export function LoginScreen() {
                 pasteTransformer={(pasted) => pasted.replace(/\D/g, "")}
                 containerClassName="justify-center"
               >
-                <InputOTPGroup>
+                <InputOTPGroup className="gap-2">
                   {Array.from({ length: OTP_LENGTH }, (_, index) => (
                     <InputOTPSlot
                       key={index}
                       index={index}
                       aria-invalid={Boolean(error)}
-                      className="h-12 w-11 rounded-[14px] border text-lg font-semibold"
+                      className="h-12 w-11 !rounded-xl !border !border-[var(--outline)] bg-[var(--surface-container-high)] text-lg font-semibold shadow-[0_1px_2px_rgba(14,18,27,0.08)] data-[active=true]:!border-[var(--primary)]"
                     />
                   ))}
                 </InputOTPGroup>
               </InputOTP>
+              <p className="text-xs text-[var(--on-surface-variant)]">
+                コピー&ペースト対応。{OTP_LENGTH}桁を入力すると自動でログインします。
+              </p>
             </div>
 
-            {verifying && <p className="text-xs text-[var(--on-surface-variant)]">サインイン中...</p>}
-            {error && (
-              <p className="text-xs font-medium text-[var(--status-rejected)]" role="alert">
-                {error}
-              </p>
-            )}
+            <div className="min-h-5">
+              {verifying && <p className="text-xs text-[var(--on-surface-variant)]">サインイン中...</p>}
+              {!verifying && error && (
+                <p className="text-xs font-medium text-[var(--status-rejected)]" role="alert">
+                  {error}
+                </p>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                void handleVerify(code);
+              }}
+              disabled={!canSubmitCode || verifying}
+              className={cn(
+                "button-primary w-full",
+                !canSubmitCode || verifying ? "bg-muted text-muted-foreground cursor-not-allowed" : ""
+              )}
+            >
+              {verifying ? "サインイン中..." : "ログイン"}
+            </button>
 
             <div className="flex items-center justify-between gap-3 text-xs">
               <button

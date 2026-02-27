@@ -308,15 +308,28 @@ export const useAppStore = create<AppState>()((set, get) => ({
 
   verifySignInCode: async ({ email, code }) => {
     try {
-      const res = await fetch("/api/auth/verify-code", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, code }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        return { ok: false, error: data?.error || "サインインに失敗しました" };
+      const normalizedEmail = email.trim().toLowerCase();
+      const token = String(code).replace(/\D/g, "");
+      if (!normalizedEmail || !token) {
+        return { ok: false, error: "メールアドレスと認証コードを入力してください" };
       }
+
+      const { error } = await supabase.auth.verifyOtp({
+        email: normalizedEmail,
+        token,
+        type: "email",
+      });
+      if (error) {
+        return { ok: false, error: error.message || "サインインに失敗しました" };
+      }
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      const session = sessionData.session ?? null;
+      if (session) {
+        set({ session });
+        await loadProfileAndData(set, get, session);
+      }
+
       return { ok: true };
     } catch {
       return { ok: false, error: "サインインに失敗しました" };
