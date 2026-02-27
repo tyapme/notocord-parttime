@@ -106,6 +106,21 @@ export async function breakEnd(): Promise<AttendanceResult> {
 }
 
 /**
+ * 日跨ぎ自動退勤・出勤
+ * セッション開始日と現在日が異なる場合に呼び出す
+ * - 前日23:59:59.999で旧セッションを終了（タスクに「日を跨いだため自動退勤」を追加）
+ * - 当日00:00:00で新セッションを開始
+ * @returns 新しいセッションID（日跨ぎが発生した場合）、またはnull
+ */
+export async function handleDayChange(): Promise<AttendanceResult<string | null>> {
+    const { data, error } = await supabase.rpc("handle_day_change");
+    if (error) {
+        return { ok: false, error: error.message };
+    }
+    return { ok: true, data: data as string | null };
+}
+
+/**
  * 勤務中のタスクを保存
  */
 export async function saveCurrentTasks(tasks: string[]): Promise<AttendanceResult> {

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Play,
-  Square,
+  LogOut,
   Coffee,
   Clock,
   Calendar,
@@ -44,11 +44,13 @@ import {
   getAttendanceStatus,
   getBreakMinutesDb,
   getWorkMinutesDb,
+  handleDayChange,
   saveCurrentTasks as saveCurrentTasksDb,
 } from "@/lib/attendance-db";
 import { supabase } from "@/lib/supabase/client";
-import { formatJstDateLabel, formatJstDateTime, formatJstTime, formatJstTimeWithSeconds } from "@/lib/datetime";
+import { formatJstDateLabel, formatJstDateTime, formatJstTime, formatJstTimeWithSeconds, getISOWeekNumber, formatYmd } from "@/lib/datetime";
 import { useAppStore } from "@/lib/store";
+import type { FixRequest, FlexRequest } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
@@ -254,6 +256,8 @@ function AttendanceScreen() {
   const currentUser = useAppStore((state) => state.currentUser);
   const users = useAppStore((state) => state.users);
   const fetchUsers = useAppStore((state) => state.fetchUsers);
+  const requests = useAppStore((state) => state.requests);
+  const fetchRequests = useAppStore((state) => state.fetchRequests);
   const activeTab = useAppStore((state) => state.activeAttendanceTab);
 
   const [sessions, setSessions] = useState<AttendanceSessionDb[]>([]);
@@ -274,6 +278,8 @@ function AttendanceScreen() {
   const [editMessage, setEditMessage] = useState("");
   const [manageFilterUserId, setManageFilterUserId] = useState("all");
   const [showClockOutConfirm, setShowClockOutConfirm] = useState(false);
+  // 出勤警告タイプ: null=なし, no-shift=シフトなし, early=早すぎ, late=遅すぎ, overtime=130%超過
+  const [clockInWarningType, setClockInWarningType] = useState<null | "no-shift" | "early" | "late" | "overtime">(null);
   const [showThankYou, setShowThankYou] = useState(false);
   const [modalTaskInput, setModalTaskInput] = useState("");
 
@@ -422,6 +428,14 @@ function AttendanceScreen() {
     }
   }, [currentUser, fetchUsers]);
 
+  // シフト申請データを取得（staffのみ、シフト予定表示用）
+  useEffect(() => {
+    if (!currentUser) return;
+    if (currentUser.role === "staff") {
+      void fetchRequests();
+    }
+  }, [currentUser, fetchRequests]);
+
   const nameByUserId = useMemo(() => {
     const map = new Map<string, string>();
     if (currentUser) map.set(currentUser.id, currentUser.name);
@@ -451,6 +465,11 @@ function AttendanceScreen() {
       lastSyncedTasksRef.current = newTasksJson;
     }
   }, [myOpenSession?.id, JSON.stringify(myOpenSession?.tasks ?? [])]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // handleClockInWithCheck で使う変数（フックなので早期リターンの前に配置）
+  const todayStr = formatYmd(new Date());
+  const userRequestType = currentUser?.requestType ?? "fix";
+  const currentUserId = currentUser?.id;
 
   if (!currentUser) return null;
 
@@ -487,11 +506,121 @@ function AttendanceScreen() {
     }
     setMyStatus("working"); // 即座にステータス更新
     setShowThankYou(false); // お疲れ様画面を消す
+    setClockInWarningType(null); // 警告ダイアログを閉じる
     toast({ description: "出勤しました" });
     await refreshData();
   };
 
+  const handleClockInWithCheck = () => {
+    const now = new Date();
+
+    if (userRequestType === "fix") {
+      // fix勤務: 今日のシフトを取得
+      const todayFixRequest = requests.find((r): r is FixRequest =>
+        r.type === "fix" &&
+        r.userId === currentUserId &&
+        r.status === "approved" &&
+        (r.approvedStartAt ?? r.requestedStartAt).startsWith(todayStr)
+      );
+
+      if (!todayFixRequest) {
+        setClockInWarningType("no-shift");
+        return;
+      }
+
+      // シフト開始・終了時刻
+      const shiftStartAt = todayFixRequest.approvedStartAt ?? todayFixRequest.requestedStartAt;
+      const shiftEndAt = todayFixRequest.approvedEndAt ?? todayFixRequest.requestedEndAt;
+      const shiftStart = new Date(shiftStartAt);
+      const shiftEnd = new Date(shiftEndAt);
+      const oneHourBefore = new Date(shiftStart.getTime() - 60 * 60 * 1000);
+
+      if (now < oneHourBefore) {
+        setClockInWarningType("early");
+        return;
+      }
+      if (now > shiftEnd) {
+        setClockInWarningType("late");
+        return;
+      }
+
+      // 今日の勤務時間を計算して130%超過チェック
+      const shiftMinutes = Math.max(0, Math.floor((shiftEnd.getTime() - shiftStart.getTime()) / 60000));
+      const todaySessions = sessions.filter((s) => {
+        if (s.user_id !== currentUserId) return false;
+        return s.start_at.startsWith(todayStr);
+      });
+      const workedMinutes = todaySessions.reduce((sum, s) => sum + getWorkMinutesDb(s), 0);
+      const progressPercent = shiftMinutes > 0 ? Math.round((workedMinutes / shiftMinutes) * 100) : 0;
+
+      if (progressPercent > 130) {
+        setClockInWarningType("overtime");
+        return;
+      }
+
+      // 問題なければ出勤
+      handleClockIn();
+    } else {
+      // flex勤務: 今週のシフトを取得
+      const { year, week } = getISOWeekNumber(todayStr);
+      const thisWeekFlexRequest = requests.find((r): r is FlexRequest =>
+        r.type === "flex" &&
+        r.userId === currentUserId &&
+        r.status === "approved" &&
+        r.isoYear === year &&
+        r.isoWeek === week
+      );
+
+      if (!thisWeekFlexRequest) {
+        setClockInWarningType("no-shift");
+        return;
+      }
+
+      // 週間勤務時間を計算して130%超過チェック
+      const weekStartDate = thisWeekFlexRequest.weekStartDate ?? (() => {
+        const d = new Date(todayStr + "T00:00:00");
+        const day = d.getDay();
+        const diff = day === 0 ? -6 : 1 - day;
+        d.setDate(d.getDate() + diff);
+        return formatYmd(d, "Asia/Tokyo");
+      })();
+      const weekEndDate = (() => {
+        const d = new Date(weekStartDate + "T00:00:00");
+        d.setDate(d.getDate() + 6);
+        return formatYmd(d, "Asia/Tokyo");
+      })();
+      const thisWeekSessions = sessions.filter((s) => {
+        if (s.user_id !== currentUserId) return false;
+        const sessionDate = s.start_at.split("T")[0];
+        return sessionDate >= weekStartDate && sessionDate <= weekEndDate;
+      });
+      const workedMinutes = thisWeekSessions.reduce((sum, s) => sum + getWorkMinutesDb(s), 0);
+      const approvedMinutes = (thisWeekFlexRequest.approvedHours ?? 0) * 60;
+      const progressPercent = approvedMinutes > 0 ? Math.round((workedMinutes / approvedMinutes) * 100) : 0;
+
+      if (progressPercent > 130) {
+        setClockInWarningType("overtime");
+        return;
+      }
+
+      // 問題なければ出勤
+      handleClockIn();
+    }
+  };
+
   const handleBreakStart = async () => {
+    // 日跨ぎチェック: セッション開始日と今日が異なれば自動退勤・出勤
+    const dayChangeResult = await handleDayChange();
+    if (!dayChangeResult.ok) {
+      toast({ description: dayChangeResult.error ?? "日跨ぎ処理に失敗しました", variant: "destructive" });
+      return;
+    }
+    if (dayChangeResult.data) {
+      // 日跨ぎがあった場合、データを更新
+      await refreshData();
+      toast({ description: "日付が変わったため、自動で退勤・出勤しました" });
+    }
+
     const result = await breakStart();
     if (!result.ok) {
       toast({ description: result.error ?? "休憩開始に失敗しました", variant: "destructive" });
@@ -503,6 +632,20 @@ function AttendanceScreen() {
   };
 
   const handleBreakEnd = async () => {
+    // 日跨ぎチェック: セッション開始日と今日が異なれば自動退勤・出勤
+    const dayChangeResult = await handleDayChange();
+    if (!dayChangeResult.ok) {
+      toast({ description: dayChangeResult.error ?? "日跨ぎ処理に失敗しました", variant: "destructive" });
+      return;
+    }
+    if (dayChangeResult.data) {
+      // 日跨ぎがあった場合、休憩は新セッションでは始まっていないので、休憩終了は不要
+      await refreshData();
+      toast({ description: "日付が変わったため、自動で退勤・出勤しました" });
+      setMyStatus("working");
+      return;
+    }
+
     const result = await breakEnd();
     if (!result.ok) {
       toast({ description: result.error ?? "休憩終了に失敗しました", variant: "destructive" });
@@ -514,6 +657,18 @@ function AttendanceScreen() {
   };
 
   const handleClockOut = async () => {
+    // 日跨ぎチェック: セッション開始日と今日が異なれば自動退勤・出勤
+    const dayChangeResult = await handleDayChange();
+    if (!dayChangeResult.ok) {
+      toast({ description: dayChangeResult.error ?? "日跨ぎ処理に失敗しました", variant: "destructive" });
+      return;
+    }
+    if (dayChangeResult.data) {
+      // 日跨ぎがあった場合、新セッションが開始されているので、そのまま退勤を続行
+      await refreshData();
+      toast({ description: "日付が変わったため、自動で退勤・出勤しました" });
+    }
+
     const tasks = parseTaskLines(homeTaskDraft);
     const result = await clockOut(tasks);
     if (!result.ok) {
@@ -595,6 +750,247 @@ function AttendanceScreen() {
           {/* 現在時刻ヒーロー */}
           {!(myStatus === "off" && showThankYou) && (
             <>
+              {/* シフト予定表示（fix/flex対応） */}
+              {(() => {
+                const todayStr = formatYmd(currentTime, "Asia/Tokyo");
+                const { year: currentIsoYear, week: currentIsoWeek } = getISOWeekNumber(todayStr);
+                const userRequestType = currentUser?.requestType ?? "fix";
+
+                if (userRequestType === "fix") {
+                  // fix勤務：今日の確定済み勤務予定を表示
+                  const todayFixRequest = requests.find((r): r is FixRequest =>
+                    r.type === "fix" &&
+                    r.userId === currentUser?.id &&
+                    r.status === "approved" &&
+                    (r.approvedStartAt ?? r.requestedStartAt).startsWith(todayStr)
+                  );
+
+                  // シフトの開始・終了時刻
+                  const shiftStartAt = todayFixRequest ? (todayFixRequest.approvedStartAt ?? todayFixRequest.requestedStartAt) : null;
+                  const shiftEndAt = todayFixRequest ? (todayFixRequest.approvedEndAt ?? todayFixRequest.requestedEndAt) : null;
+
+                  // シフトの予定時間（分）
+                  const shiftMinutes = shiftStartAt && shiftEndAt
+                    ? Math.max(0, Math.floor((new Date(shiftEndAt).getTime() - new Date(shiftStartAt).getTime()) / 60000))
+                    : 0;
+
+                  // 現在の勤務時間（分）- 勤務中の場合のみ
+                  const workedMinutes = myOpenSession && myStatus !== "off"
+                    ? Math.floor(calculateWorkingSeconds(myOpenSession, currentTime) / 60)
+                    : 0;
+
+                  // 進捗%
+                  const progressPercent = shiftMinutes > 0 ? Math.round((workedMinutes / shiftMinutes) * 100) : 0;
+
+                  // 時間外判定（シフト開始1時間以上前か、終了後に出勤）
+                  const isOutsideSchedule = (() => {
+                    if (!myOpenSession || !shiftStartAt || !shiftEndAt) return false;
+                    const clockInTime = new Date(myOpenSession.start_at);
+                    const shiftStart = new Date(shiftStartAt);
+                    const shiftEnd = new Date(shiftEndAt);
+                    const oneHourBefore = new Date(shiftStart.getTime() - 60 * 60 * 1000);
+                    return clockInTime < oneHourBefore || clockInTime > shiftEnd;
+                  })();
+
+                  // プログレスバーの色判定
+                  const getProgressColor = () => {
+                    if (!todayFixRequest) return "bg-[var(--status-rejected)]"; // 未確定: 赤
+                    if (progressPercent < 70) return "bg-[var(--status-approved)]"; // 0-70%: 緑
+                    if (progressPercent <= 110) return "bg-[var(--primary)]"; // 70-110%: 通常
+                    if (progressPercent <= 130) return "bg-[var(--status-pending)]"; // 110-130%: 注意
+                    return "bg-[var(--status-rejected)]"; // 130%以上: 赤
+                  };
+
+                  const getProgressTextColor = () => {
+                    if (!todayFixRequest) return "text-[var(--status-rejected)]";
+                    if (progressPercent < 70) return "text-[var(--status-approved)]";
+                    if (progressPercent <= 110) return "text-[var(--primary)]";
+                    if (progressPercent <= 130) return "text-[var(--status-pending)]";
+                    return "text-[var(--status-rejected)]";
+                  };
+
+                  // 勤務中の場合はプログレスバー付きで表示
+                  if (myStatus !== "off") {
+                    return (
+                      <div className="rounded-lg bg-[var(--surface-container)] p-4 space-y-3">
+                        {/* シフト未確定で勤務中の場合の警告 */}
+                        {!todayFixRequest && (
+                          <div className="flex items-center gap-2 rounded-md bg-[var(--status-rejected)]/10 px-3 py-2">
+                            <AlertTriangle className="h-4 w-4 text-[var(--status-rejected)]" />
+                            <span className="text-sm text-[var(--status-rejected)]">今日の確定済みシフトがありません</span>
+                          </div>
+                        )}
+
+                        {/* 時間外出勤の注意 */}
+                        {todayFixRequest && isOutsideSchedule && (
+                          <div className="flex items-center gap-2 rounded-md bg-[var(--status-pending)]/10 px-3 py-2">
+                            <AlertTriangle className="h-4 w-4 text-[var(--status-pending)]" />
+                            <span className="text-sm text-[var(--status-pending)]">シフト時間外に出勤しています</span>
+                          </div>
+                        )}
+
+                        {/* 130%超過警告 */}
+                        {todayFixRequest && progressPercent > 130 && (
+                          <div className="flex items-center gap-2 rounded-md bg-[var(--status-rejected)]/10 px-3 py-2">
+                            <AlertTriangle className="h-4 w-4 text-[var(--status-rejected)]" />
+                            <span className="text-sm text-[var(--status-rejected)]">勤務時間が大幅に超過しています</span>
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-foreground">本日</span>
+                            <span className="text-xs text-[var(--on-surface-variant)]">
+                              {formatDurationMinutes(workedMinutes)}{todayFixRequest ? ` / ${formatDurationMinutes(shiftMinutes)}` : ""}
+                            </span>
+                          </div>
+                          <span className={cn("text-sm font-bold tabular-nums", getProgressTextColor())}>
+                            {todayFixRequest ? `${progressPercent}%` : ""}
+                          </span>
+                        </div>
+
+                        {/* プログレスバー */}
+                        <div className="h-2 rounded-full bg-[var(--surface-container-high)] overflow-hidden">
+                          <div
+                            className={cn("h-full rounded-full transition-all", getProgressColor())}
+                            style={{ width: todayFixRequest ? `${Math.min(progressPercent, 100)}%` : "100%" }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // 勤務していない場合は予定のみ表示
+                  if (todayFixRequest) {
+                    return (
+                      <div className="rounded-lg bg-[var(--surface-container)] p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-[var(--primary)]" />
+                            <span className="text-sm font-semibold text-foreground">本日</span>
+                          </div>
+                          <span className="text-base font-semibold tabular-nums text-[var(--primary)]">
+                            {formatJstTime(shiftStartAt!)} → {formatJstTime(shiftEndAt!)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  }
+                  // 今日の勤務予定がない場合
+                  return (
+                    <div className="rounded-lg bg-[var(--surface-container)] p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-[var(--on-surface-variant)]" />
+                          <span className="text-sm font-semibold text-foreground">本日</span>
+                        </div>
+                        <span className="text-sm text-[var(--on-surface-variant)]">シフトなし</span>
+                      </div>
+                    </div>
+                  );
+                } else {
+                  // flex勤務：今週の確定済み勤務時間と現在までの勤務時間を表示
+                  const thisWeekFlexRequest = requests.find((r): r is FlexRequest =>
+                    r.type === "flex" &&
+                    r.userId === currentUser?.id &&
+                    r.status === "approved" &&
+                    r.isoYear === currentIsoYear &&
+                    r.isoWeek === currentIsoWeek
+                  );
+
+                  // 今週の勤務セッション（月曜〜日曜）の実働時間を計算
+                  const weekStartDate = thisWeekFlexRequest?.weekStartDate ?? (() => {
+                    // 今週の月曜日を計算
+                    const d = new Date(todayStr + "T00:00:00");
+                    const day = d.getDay();
+                    const diff = day === 0 ? -6 : 1 - day;
+                    d.setDate(d.getDate() + diff);
+                    return formatYmd(d, "Asia/Tokyo");
+                  })();
+
+                  const weekEndDate = (() => {
+                    const d = new Date(weekStartDate + "T00:00:00");
+                    d.setDate(d.getDate() + 6);
+                    return formatYmd(d, "Asia/Tokyo");
+                  })();
+
+                  const thisWeekSessions = sessions.filter((s) => {
+                    if (s.user_id !== currentUser?.id) return false;
+                    const sessionDate = s.start_at.split("T")[0];
+                    return sessionDate >= weekStartDate && sessionDate <= weekEndDate;
+                  });
+
+                  const workedMinutes = thisWeekSessions.reduce((sum, s) => sum + getWorkMinutesDb(s), 0);
+                  // 現在勤務中のセッションがあれば、その分も加算
+                  const currentWorkingMinutes = myOpenSession && myStatus === "working"
+                    ? Math.floor(calculateWorkingSeconds(myOpenSession, currentTime) / 60)
+                    : 0;
+                  const totalWorkedMinutes = workedMinutes + currentWorkingMinutes;
+
+                  const approvedHours = thisWeekFlexRequest?.approvedHours ?? 0;
+                  const approvedMinutes = approvedHours * 60;
+
+                  // 進捗%（確定シフトがない場合は0%）
+                  const progressPercent = approvedMinutes > 0 ? Math.round((totalWorkedMinutes / approvedMinutes) * 100) : 0;
+
+                  // プログレスバーの色判定
+                  const getProgressColor = () => {
+                    if (!thisWeekFlexRequest) return "bg-[var(--status-rejected)]"; // 未確定: 赤
+                    if (progressPercent < 70) return "bg-[var(--status-approved)]"; // 0-70%: 緑
+                    if (progressPercent <= 110) return "bg-[var(--primary)]"; // 70-110%: 通常
+                    if (progressPercent <= 130) return "bg-[var(--status-pending)]"; // 110-130%: 注意
+                    return "bg-[var(--status-rejected)]"; // 130%以上: 赤
+                  };
+
+                  const getProgressTextColor = () => {
+                    if (progressPercent < 70) return "text-[var(--status-approved)]";
+                    if (progressPercent <= 110) return "text-[var(--primary)]";
+                    if (progressPercent <= 130) return "text-[var(--status-pending)]";
+                    return "text-[var(--status-rejected)]";
+                  };
+
+                  return (
+                    <div className="rounded-lg bg-[var(--surface-container)] p-4 space-y-3">
+                      {/* 未確定警告 */}
+                      {!thisWeekFlexRequest && (
+                        <div className="flex items-center gap-2 rounded-md bg-[var(--status-rejected)]/10 px-3 py-2">
+                          <AlertTriangle className="h-4 w-4 text-[var(--status-rejected)]" />
+                          <span className="text-sm text-[var(--status-rejected)]">今週のシフトが未確定です</span>
+                        </div>
+                      )}
+
+                      {/* 130%超過警告 */}
+                      {thisWeekFlexRequest && progressPercent > 130 && (
+                        <div className="flex items-center gap-2 rounded-md bg-[var(--status-rejected)]/10 px-3 py-2">
+                          <AlertTriangle className="h-4 w-4 text-[var(--status-rejected)]" />
+                          <span className="text-sm text-[var(--status-rejected)]">勤務時間が大幅に超過しています</span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-foreground">今週</span>
+                          <span className="text-xs text-[var(--on-surface-variant)]">
+                            {formatDurationMinutes(totalWorkedMinutes)}{thisWeekFlexRequest ? ` / ${approvedHours}h` : ""}
+                          </span>
+                        </div>
+                        <span className={cn("text-sm font-bold tabular-nums", getProgressTextColor())}>
+                          {thisWeekFlexRequest ? `${progressPercent}%` : ""}
+                        </span>
+                      </div>
+
+                      {/* プログレスバー */}
+                      <div className="h-2 rounded-full bg-[var(--surface-container-high)] overflow-hidden">
+                        <div
+                          className={cn("h-full rounded-full transition-all", getProgressColor())}
+                          style={{ width: thisWeekFlexRequest ? `${Math.min(progressPercent, 100)}%` : "100%" }}
+                        />
+                      </div>
+                    </div>
+                  );
+                }
+              })()}
+
               <div className="rounded-2xl bg-[var(--primary-container)] p-6">
                 <div className="flex items-start justify-between">
                   <div>
@@ -617,7 +1013,7 @@ function AttendanceScreen() {
               {/* ステータスカード */}
               <div
                 className={cn(
-                  "rounded-xl px-4 py-3",
+                  "rounded-lg px-4 py-3",
                   myStatus === "working" && "bg-[var(--status-approved)]/10 border border-[var(--status-approved)]/20",
                   myStatus === "on_break" && "bg-[var(--primary)]/10 border border-[var(--primary)]/20",
                   myStatus === "off" && "bg-[var(--surface-container)]"
@@ -645,7 +1041,7 @@ function AttendanceScreen() {
                   {myStatus !== "off" && myOpenSession && (
                     <div className="text-right pr-1">
                       <p className="text-[10px] text-[var(--on-surface-variant)]">出勤</p>
-                      <p className="text-sm font-semibold tabular-nums text-foreground">{formatJstTimeWithSeconds(myOpenSession.start_at)}</p>
+                      <p className="text-sm font-semibold tabular-nums text-foreground">{formatJstTime(myOpenSession.start_at)}</p>
                     </div>
                   )}
                 </div>
@@ -672,7 +1068,7 @@ function AttendanceScreen() {
               {myStatus === "off" && (
                 <button
                   type="button"
-                  onClick={handleClockIn}
+                  onClick={handleClockInWithCheck}
                   className="group flex items-center justify-center gap-2 rounded-xl bg-[var(--primary)] py-3 px-4 text-[var(--primary-foreground)] transition-all hover:bg-[var(--primary)]/90 active:scale-[0.98]"
                 >
                   <Play className="h-5 w-5" />
@@ -697,7 +1093,7 @@ function AttendanceScreen() {
                     onClick={() => setShowClockOutConfirm(true)}
                     className="group flex items-center justify-center gap-2 rounded-xl border border-[var(--outline-variant)] bg-[var(--surface-container)] py-3 px-4 text-foreground transition-all hover:bg-[var(--surface-container-high)] active:scale-[0.98]"
                   >
-                    <Square className="h-5 w-5" />
+                    <LogOut className="h-5 w-5" />
                     <span className="text-sm font-semibold">退勤</span>
                   </button>
                 </>
@@ -884,7 +1280,7 @@ function AttendanceScreen() {
                           <div className="flex flex-1 items-center justify-between">
                             <span className="text-sm text-foreground">{event.label}</span>
                             <span className="text-sm font-medium tabular-nums text-[var(--on-surface-variant)]">
-                              {formatJstTimeWithSeconds(event.time.toISOString())}
+                              {formatJstTime(event.time.toISOString())}
                             </span>
                           </div>
                         </div>
@@ -907,7 +1303,7 @@ function AttendanceScreen() {
                               {myStatus === "working" ? "勤務中..." : "休憩中..."}
                             </span>
                             <span className="text-sm font-medium tabular-nums text-foreground">
-                              {formatCurrentTimeJst(currentTime)}
+                              {formatJstTime(currentTime.toISOString())}
                             </span>
                           </div>
                         </div>
@@ -945,8 +1341,13 @@ function AttendanceScreen() {
           {(() => {
             const targetSessions = role === "staff" ? myPeriodSessions : managedSessions;
             const totalWorkMinutes = targetSessions.reduce((sum, s) => sum + getWorkMinutesDb(s), 0);
-            const totalBreakMinutes = targetSessions.reduce((sum, s) => sum + getBreakMinutesDb(s), 0);
-            const workDays = targetSessions.filter(s => s.end_at !== null).length;
+            // 同じ日は除外してユニークな出勤日をカウント
+            const uniqueDates = new Set(
+              targetSessions
+                .filter(s => s.end_at !== null)
+                .map(s => s.start_at.split("T")[0])
+            );
+            const workDays = uniqueDates.size;
             const avgWorkMinutes = workDays > 0 ? Math.round(totalWorkMinutes / workDays) : 0;
             const totalHours = Math.floor(totalWorkMinutes / 60);
             const totalMins = totalWorkMinutes % 60;
@@ -973,18 +1374,12 @@ function AttendanceScreen() {
                     </p>
                   </div>
                   <div className="rounded-xl bg-[var(--surface-container-lowest)] p-3 text-center">
-                    <p className="text-[10px] text-[var(--on-surface-variant)] mb-1">平均/日</p>
+                    <p className="text-[10px] text-[var(--on-surface-variant)] mb-1">総労働/出勤日</p>
                     <p className="text-lg font-bold tabular-nums text-foreground">
                       {formatDurationMinutes(avgWorkMinutes)}
                     </p>
                   </div>
                 </div>
-                {totalBreakMinutes > 0 && (
-                  <div className="mt-2 flex items-center justify-center gap-1.5 text-xs text-[var(--primary)]/70">
-                    <Coffee className="h-3 w-3" />
-                    <span>総休憩: {formatDurationMinutes(totalBreakMinutes)}</span>
-                  </div>
-                )}
               </div>
             );
           })()}
@@ -1197,6 +1592,90 @@ function AttendanceScreen() {
               <label className="text-sm font-medium text-foreground">修正メッセージ（必須）</label>
               <textarea value={editMessage} onChange={(event) => setEditMessage(event.target.value)} rows={4} className="input-base min-h-[96px] resize-y" aria-label="修正メッセージ" placeholder="修正理由を入力" />
             </div>
+          </div>
+        </ShiftRequestModalFrame>
+      )}
+
+      {/* 出勤警告モーダル */}
+      {clockInWarningType && (
+        <ShiftRequestModalFrame
+          header={
+            <span className="text-base font-semibold text-[var(--status-rejected)]">
+              {clockInWarningType === "no-shift" && "シフト未確定"}
+              {clockInWarningType === "early" && "出勤時間外"}
+              {clockInWarningType === "late" && "出勤時間外"}
+              {clockInWarningType === "overtime" && "勤務時間超過"}
+            </span>
+          }
+          onClose={() => setClockInWarningType(null)}
+          footer={
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setClockInWarningType(null)}
+                className="flex-1 rounded-xl bg-[var(--primary-container)] py-2.5 text-sm font-semibold text-[var(--on-secondary-container)] hover:bg-[var(--primary-container)]/80"
+              >
+                キャンセル
+              </button>
+              <button
+                type="button"
+                onClick={handleClockIn}
+                className="flex-1 rounded-xl bg-[var(--status-rejected)] py-2.5 text-sm font-semibold text-white hover:bg-[var(--status-rejected)]/90"
+              >
+                出勤する
+              </button>
+            </div>
+          }
+        >
+          <div className="space-y-4 px-5 py-4">
+            <div className="flex items-center gap-3 rounded-xl bg-[var(--status-rejected)]/10 p-4">
+              <AlertTriangle className="h-6 w-6 text-[var(--status-rejected)] shrink-0" />
+              <div className="space-y-1">
+                {clockInWarningType === "no-shift" && (
+                  <>
+                    <p className="text-sm font-semibold text-foreground">
+                      {userRequestType === "fix" ? "今日の確定済みシフトがありません" : "今週の確定済みシフトがありません"}
+                    </p>
+                    <p className="text-xs text-[var(--on-surface-variant)]">
+                      シフト申請が承認されていない状態で出勤しようとしています。
+                    </p>
+                  </>
+                )}
+                {clockInWarningType === "early" && (
+                  <>
+                    <p className="text-sm font-semibold text-foreground">
+                      シフト開始時刻の1時間以上前です
+                    </p>
+                    <p className="text-xs text-[var(--on-surface-variant)]">
+                      予定より早く出勤しようとしています。
+                    </p>
+                  </>
+                )}
+                {clockInWarningType === "late" && (
+                  <>
+                    <p className="text-sm font-semibold text-foreground">
+                      シフト終了時刻を過ぎています
+                    </p>
+                    <p className="text-xs text-[var(--on-surface-variant)]">
+                      シフト終了後に出勤しようとしています。
+                    </p>
+                  </>
+                )}
+                {clockInWarningType === "overtime" && (
+                  <>
+                    <p className="text-sm font-semibold text-foreground">
+                      {userRequestType === "fix" ? "本日の勤務時間が130%を超えています" : "週間勤務時間が130%を超えています"}
+                    </p>
+                    <p className="text-xs text-[var(--on-surface-variant)]">
+                      承認された勤務時間を大幅に超過しています。
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+            <p className="text-sm text-[var(--on-surface-variant)]">
+              このまま出勤してもよろしいですか？
+            </p>
           </div>
         </ShiftRequestModalFrame>
       )}

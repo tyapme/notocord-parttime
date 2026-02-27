@@ -210,7 +210,7 @@
   }
   .button-secondary {
     @apply inline-flex items-center justify-center gap-2 rounded-[var(--ds-component-button-corner-radius)] border px-4 text-sm;
-    background: var(--secondary-container);
+    background: var(--primary-container);
     color: var(--on-secondary-container);
     border-color: transparent;
     min-height: var(--ds-component-button-min-height);
@@ -220,7 +220,7 @@
     box-shadow: none;
   }
   .button-secondary:hover {
-    background: color-mix(in oklab, var(--secondary-container) 92%, white 8%);
+    background: color-mix(in oklab, var(--primary-container) 92%, white 8%);
   }
   .tap-target {
     min-height: var(--tap-target);

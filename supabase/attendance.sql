@@ -304,6 +304,84 @@ begin
 end;
 $$;
 
+-- 日跨ぎ自動退勤・出勤（セッションの開始日と現在の日付が異なる場合に呼び出す）
+create or replace function public.handle_day_change()
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id uuid := auth.uid();
+  v_session_id uuid;
+  v_session_start_date date;
+  v_today date;
+  v_prev_day_end timestamptz;
+  v_today_start timestamptz;
+  v_existing_tasks text[];
+  v_new_session_id uuid;
+begin
+  if v_user_id is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  v_session_id := private.get_open_attendance_session(v_user_id);
+  if v_session_id is null then
+    -- 勤務中でなければ何もしない
+    return null;
+  end if;
+
+  -- セッションの開始日と今日の日付を比較（日本時間で）
+  select (start_at at time zone 'Asia/Tokyo')::date, tasks
+  into v_session_start_date, v_existing_tasks
+  from public.attendance_sessions
+  where id = v_session_id;
+
+  v_today := (now() at time zone 'Asia/Tokyo')::date;
+
+  if v_session_start_date >= v_today then
+    -- 日が変わっていなければ何もしない
+    return null;
+  end if;
+
+  -- 日が変わっている場合、前日の23:59:59.999 JSTで退勤、当日の00:00:00 JSTで出勤
+  -- JSTの日付を正しくUTCのtimestamptzに変換
+  -- v_today（date型）をJSTの00:00:00として解釈し、UTCに変換
+  v_today_start := (v_today::text || ' 00:00:00')::timestamp at time zone 'Asia/Tokyo';
+  v_prev_day_end := v_today_start - interval '1 millisecond';
+
+  -- 新しいセッションを先に作成（当日の00:00:00 JST）
+  insert into public.attendance_sessions (user_id, start_at, continued_from_closing_boundary)
+  values (v_user_id, v_today_start, true)
+  returning id into v_new_session_id;
+
+  -- オープンな休憩を処理
+  -- 前日以前に開始した休憩は前日終了時刻で終了
+  update public.attendance_breaks
+  set end_at = v_prev_day_end
+  where session_id = v_session_id 
+    and end_at is null 
+    and start_at < v_today_start;
+
+  -- 当日以降に開始した休憩は新セッションに移動
+  update public.attendance_breaks
+  set session_id = v_new_session_id
+  where session_id = v_session_id 
+    and start_at >= v_today_start;
+
+  -- 自動退勤タスクを追加
+  update public.attendance_sessions
+  set
+    end_at = v_prev_day_end,
+    tasks = array_append(coalesce(v_existing_tasks, '{}'), '日を跨いだため自動退勤'),
+    split_by_closing_boundary = true,
+    updated_at = now()
+  where id = v_session_id;
+
+  return v_new_session_id;
+end;
+$$;
+
 -- やったことを保存（勤務中のみ）
 create or replace function public.save_current_tasks(p_tasks text[])
 returns void
@@ -510,6 +588,10 @@ grant execute on function public.break_start() to authenticated, service_role;
 revoke all on function public.break_end() from public;
 revoke all on function public.break_end() from anon;
 grant execute on function public.break_end() to authenticated, service_role;
+
+revoke all on function public.handle_day_change() from public;
+revoke all on function public.handle_day_change() from anon;
+grant execute on function public.handle_day_change() to authenticated, service_role;
 
 revoke all on function public.save_current_tasks(text[]) from public;
 revoke all on function public.save_current_tasks(text[]) from anon;

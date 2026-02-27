@@ -16,7 +16,7 @@ const buttonVariants = cva(
         outline:
           'rounded-[var(--ds-component-button-corner-radius)] border border-[var(--outline)] bg-transparent text-primary shadow-none hover:bg-[color-mix(in_oklab,var(--primary)_8%,transparent)]',
         secondary:
-          'rounded-[var(--ds-component-button-corner-radius)] bg-[var(--secondary-container)] text-[var(--on-secondary-container)] border border-transparent shadow-none hover:bg-[color-mix(in_oklab,var(--secondary-container)_92%,white_8%)]',
+          'rounded-[var(--ds-component-button-corner-radius)] bg-[var(--primary-container)] text-[var(--on-secondary-container)] border border-transparent shadow-none hover:bg-[color-mix(in_oklab,var(--primary-container)_92%,white_8%)]',
         ghost:
           'rounded-[var(--ds-component-button-corner-radius)] border border-transparent bg-transparent text-primary shadow-none hover:bg-[color-mix(in_oklab,var(--primary)_8%,transparent)]',
         link: 'rounded-[var(--ds-component-button-corner-radius)] border border-transparent bg-transparent text-primary underline-offset-4 hover:underline',
