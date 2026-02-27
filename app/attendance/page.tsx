@@ -788,7 +788,7 @@ function AttendanceScreen() {
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="タスクを入力"
+                  placeholder="やったことを入力"
                   value={taskInputValue}
                   onChange={(e) => setTaskInputValue(e.target.value)}
                   className="flex-1 rounded-xl border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-4 py-2.5 text-sm text-foreground placeholder:text-[var(--on-surface-variant)]/50 focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"

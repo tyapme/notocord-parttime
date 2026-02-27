@@ -51,16 +51,7 @@ export function ShiftRequestModalFrame({
               <DrawerTitle asChild>
                 <div className="flex items-center gap-2 min-w-0">{header}</div>
               </DrawerTitle>
-              <div className="flex items-center gap-2.5 shrink-0">
-                {status && <StatusBadge status={status} />}
-                <button
-                  onClick={onClose}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="閉じる"
-                >
-                  <XIcon className="h-4 w-4" />
-                </button>
-              </div>
+              {status && <StatusBadge status={status} />}
             </div>
             {/* Radix requires description for accessibility */}
             <DrawerDescription className="sr-only">モーダルコンテンツ</DrawerDescription>
