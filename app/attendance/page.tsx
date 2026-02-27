@@ -1217,7 +1217,7 @@ function AttendanceScreen() {
           header={<span className="text-base font-semibold">退勤確認</span>}
           onClose={() => setShowClockOutConfirm(false)}
           footer={
-            <div className="flex gap-3 pt-4">
+            <div className="flex gap-3">
               <button
                 type="button"
                 onClick={async () => {
