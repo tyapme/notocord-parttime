@@ -32,6 +32,8 @@ import {
   formatTaskLines,
 } from "@/lib/attendance";
 import {
+  AttendanceBreakDb,
+  AttendanceCorrectionDb,
   AttendanceSessionDb,
   AttendanceStatusDb,
   breakEnd,
@@ -336,9 +338,31 @@ function AttendanceScreen() {
           table: "attendance_sessions",
           filter: `user_id=eq.${currentUser.id}`,
         },
-        () => {
-          // 自分のセッションが変更されたらデータを再取得
-          void refreshData();
+        async (payload) => {
+          // ステータスを即座に更新
+          const status = await getAttendanceStatus();
+          setMyStatus(status);
+
+          // セッションデータを差分更新
+          if (payload.eventType === "INSERT") {
+            const newSession = payload.new as AttendanceSessionDb & { breaks?: AttendanceBreakDb[]; corrections?: AttendanceCorrectionDb[] };
+            setSessions((prev) => [
+              ...prev,
+              { ...newSession, breaks: newSession.breaks ?? [], corrections: newSession.corrections ?? [] },
+            ]);
+          } else if (payload.eventType === "UPDATE") {
+            const updated = payload.new as Partial<AttendanceSessionDb>;
+            setSessions((prev) =>
+              prev.map((s) =>
+                s.id === updated.id
+                  ? { ...s, ...updated }
+                  : s
+              )
+            );
+          } else if (payload.eventType === "DELETE") {
+            const deleted = payload.old as { id: string };
+            setSessions((prev) => prev.filter((s) => s.id !== deleted.id));
+          }
         }
       )
       .on(
@@ -348,9 +372,45 @@ function AttendanceScreen() {
           schema: "public",
           table: "attendance_breaks",
         },
-        () => {
-          // 休憩データが変更されたらデータを再取得
-          void refreshData();
+        async (payload) => {
+          // ステータスを即座に更新
+          const status = await getAttendanceStatus();
+          setMyStatus(status);
+
+          // 休憩データを該当セッションに差分反映
+          if (payload.eventType === "INSERT") {
+            const newBreak = payload.new as AttendanceBreakDb & { session_id: string };
+            setSessions((prev) =>
+              prev.map((s) =>
+                s.id === newBreak.session_id
+                  ? { ...s, breaks: [...s.breaks, { id: newBreak.id, start_at: newBreak.start_at, end_at: newBreak.end_at }] }
+                  : s
+              )
+            );
+          } else if (payload.eventType === "UPDATE") {
+            const updated = payload.new as AttendanceBreakDb & { session_id: string };
+            setSessions((prev) =>
+              prev.map((s) =>
+                s.id === updated.session_id
+                  ? {
+                      ...s,
+                      breaks: s.breaks.map((b) =>
+                        b.id === updated.id ? { id: updated.id, start_at: updated.start_at, end_at: updated.end_at } : b
+                      ),
+                    }
+                  : s
+              )
+            );
+          } else if (payload.eventType === "DELETE") {
+            const deleted = payload.old as { id: string; session_id: string };
+            setSessions((prev) =>
+              prev.map((s) =>
+                s.id === deleted.session_id
+                  ? { ...s, breaks: s.breaks.filter((b) => b.id !== deleted.id) }
+                  : s
+              )
+            );
+          }
         }
       )
       .subscribe();
@@ -358,7 +418,7 @@ function AttendanceScreen() {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [currentUser, refreshData]);
+  }, [currentUser]);
 
   useEffect(() => {
     if (!currentUser) return;
