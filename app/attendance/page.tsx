@@ -14,7 +14,6 @@ import {
   Users,
   Pause,
   ChevronDown,
-  Save,
 } from "lucide-react";
 import { SelectField } from "@/components/select-field";
 import { ShiftRequestModalFrame } from "@/components/shift-request-modal-frame";
@@ -260,7 +259,6 @@ function AttendanceScreen() {
 
   const [sessions, setSessions] = useState<AttendanceSessionDb[]>([]);
   const [myStatus, setMyStatus] = useState<AttendanceStatusDb>("off");
-  const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
 
   const periodOptions = useMemo(() => buildPeriodOptions(), []);
@@ -268,10 +266,9 @@ function AttendanceScreen() {
 
   const [homeTaskDraft, setHomeTaskDraft] = useState("");
   const [taskSaveStatus, setTaskSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
-  const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastSyncedTasksRef = useRef<string>(""); // Realtime同期用: 前回同期したタスクのJSON
-  const [taskDraftBySessionId, setTaskDraftBySessionId] = useState<Record<string, string>>({});
   const [taskInputValue, setTaskInputValue] = useState(""); // タスク入力欄の値
+  const [listTaskInputBySessionId, setListTaskInputBySessionId] = useState<Record<string, string>>({}); // 一覧タブ用タスク入力
 
   const [editSessionId, setEditSessionId] = useState<string | null>(null);
   const [editStartAt, setEditStartAt] = useState("");
@@ -317,8 +314,6 @@ function AttendanceScreen() {
       }
     } catch (err) {
       console.error("Failed to refresh attendance data:", err);
-    } finally {
-      setLoading(false);
     }
   }, [currentUser, currentPeriod]);
 
@@ -395,11 +390,11 @@ function AttendanceScreen() {
               prev.map((s) =>
                 s.id === updated.session_id
                   ? {
-                      ...s,
-                      breaks: s.breaks.map((b) =>
-                        b.id === updated.id ? { id: updated.id, start_at: updated.start_at, end_at: updated.end_at } : b
-                      ),
-                    }
+                    ...s,
+                    breaks: s.breaks.map((b) =>
+                      b.id === updated.id ? { id: updated.id, start_at: updated.start_at, end_at: updated.end_at } : b
+                    ),
+                  }
                   : s
               )
             );
@@ -532,39 +527,6 @@ function AttendanceScreen() {
     await refreshData();
   };
 
-  const handleSaveCurrentTasks = async () => {
-    const tasks = parseTaskLines(homeTaskDraft);
-    const result = await saveCurrentTasksDb(tasks);
-    if (!result.ok) {
-      toast({ description: result.error ?? "保存に失敗しました", variant: "destructive" });
-      return;
-    }
-    toast({ description: "やったことを保存しました" });
-    await refreshData();
-  };
-
-  const handleSaveSessionTasks = async (session: AttendanceSessionDb) => {
-    const draft = taskDraftBySessionId[session.id] ?? formatTaskLines(session.tasks);
-    const tasks = parseTaskLines(draft);
-
-    // 自分のオープンセッションなら saveCurrentTasks、それ以外は saveSessionTasks
-    if (session.end_at === null && session.user_id === currentUser.id) {
-      const result = await saveCurrentTasksDb(tasks);
-      if (!result.ok) {
-        toast({ description: result.error ?? "保存に失敗しました", variant: "destructive" });
-        return;
-      }
-    } else {
-      const result = await saveSessionTasksDb(session.id, tasks);
-      if (!result.ok) {
-        toast({ description: result.error ?? "保存に失敗しました", variant: "destructive" });
-        return;
-      }
-    }
-    toast({ description: "やったことを保存しました" });
-    await refreshData();
-  };
-
   const openCorrection = (session: AttendanceSessionDb) => {
     setEditSessionId(session.id);
     setEditStartAt(toJstLocalInput(session.start_at));
@@ -634,127 +596,127 @@ function AttendanceScreen() {
 
           {/* 現在時刻ヒーロー */}
           {!(myStatus === "off" && showThankYou) && (
-          <>
-          <div className="rounded-2xl bg-[var(--primary-container)] p-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm text-[var(--primary)]">{formatCurrentDateJst(currentTime)}</p>
-                <p className="text-5xl font-bold tracking-tight mt-1 tabular-nums text-[var(--primary)]">
-                  {formatCurrentTimeJst(currentTime)}
-                </p>
-              </div>
-              {myStatus !== "off" && myOpenSession && (
-                <div className="text-right">
-                  <p className="text-xs text-[var(--primary)]/70">実働時間</p>
-                  <p className="text-2xl font-bold tabular-nums mt-0.5 text-[var(--primary)]">
-                    {formatElapsedTime(calculateWorkingSeconds(myOpenSession, currentTime))}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* ステータスカード */}
-          <div
-            className={cn(
-              "rounded-xl px-4 py-3",
-              myStatus === "working" && "bg-[var(--status-approved)]/10 border border-[var(--status-approved)]/20",
-              myStatus === "on_break" && "bg-[var(--primary)]/10 border border-[var(--primary)]/20",
-              myStatus === "off" && "bg-[var(--surface-container)]"
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div
-                  className={cn(
-                    "flex h-9 w-9 items-center justify-center rounded-lg",
-                    myStatus === "working" && "bg-[var(--status-approved)]/20",
-                    myStatus === "on_break" && "bg-[var(--primary)]/20",
-                    myStatus === "off" && "bg-[var(--surface-container-high)]"
+            <>
+              <div className="rounded-2xl bg-[var(--primary-container)] p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-[var(--primary)]">{formatCurrentDateJst(currentTime)}</p>
+                    <p className="text-5xl font-bold tracking-tight mt-1 tabular-nums text-[var(--primary)]">
+                      {formatCurrentTimeJst(currentTime)}
+                    </p>
+                  </div>
+                  {myStatus !== "off" && myOpenSession && (
+                    <div className="text-right">
+                      <p className="text-xs text-[var(--primary)]/70">実働時間</p>
+                      <p className="text-2xl font-bold tabular-nums mt-0.5 text-[var(--primary)]">
+                        {formatElapsedTime(calculateWorkingSeconds(myOpenSession, currentTime))}
+                      </p>
+                    </div>
                   )}
-                >
-                  {myStatus === "working" && <Play className="h-4 w-4 text-[var(--status-approved)]" />}
-                  {myStatus === "on_break" && <Pause className="h-4 w-4 text-[var(--primary)]" />}
-                  {myStatus === "off" && <Clock className="h-4 w-4 text-[var(--on-surface-variant)]" />}
-                </div>
-                <div>
-                  <p className="text-[10px] text-[var(--on-surface-variant)]">ステータス</p>
-                  <p className="text-sm font-bold text-foreground">{statusLabel(myStatus)}</p>
                 </div>
               </div>
-              {myStatus !== "off" && myOpenSession && (
-                <div className="text-right pr-1">
-                  <p className="text-[10px] text-[var(--on-surface-variant)]">出勤</p>
-                  <p className="text-sm font-semibold tabular-nums text-foreground">{formatJstTimeWithSeconds(myOpenSession.start_at)}</p>
-                </div>
-              )}
-            </div>
 
-            {isClosingDay && (
-              <div className="mt-3 flex items-center gap-2 rounded-md bg-[var(--status-pending)]/10 px-2.5 py-1.5">
-                <AlertTriangle className="h-3.5 w-3.5 text-[var(--status-pending)] shrink-0" />
-                <span className="text-[11px] text-[var(--status-pending)]">
-                  締め日のため日跨ぎ勤務不可
-                </span>
+              {/* ステータスカード */}
+              <div
+                className={cn(
+                  "rounded-xl px-4 py-3",
+                  myStatus === "working" && "bg-[var(--status-approved)]/10 border border-[var(--status-approved)]/20",
+                  myStatus === "on_break" && "bg-[var(--primary)]/10 border border-[var(--primary)]/20",
+                  myStatus === "off" && "bg-[var(--surface-container)]"
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={cn(
+                        "flex h-9 w-9 items-center justify-center rounded-lg",
+                        myStatus === "working" && "bg-[var(--status-approved)]/20",
+                        myStatus === "on_break" && "bg-[var(--primary)]/20",
+                        myStatus === "off" && "bg-[var(--surface-container-high)]"
+                      )}
+                    >
+                      {myStatus === "working" && <Play className="h-4 w-4 text-[var(--status-approved)]" />}
+                      {myStatus === "on_break" && <Pause className="h-4 w-4 text-[var(--primary)]" />}
+                      {myStatus === "off" && <Clock className="h-4 w-4 text-[var(--on-surface-variant)]" />}
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-[var(--on-surface-variant)]">ステータス</p>
+                      <p className="text-sm font-bold text-foreground">{statusLabel(myStatus)}</p>
+                    </div>
+                  </div>
+                  {myStatus !== "off" && myOpenSession && (
+                    <div className="text-right pr-1">
+                      <p className="text-[10px] text-[var(--on-surface-variant)]">出勤</p>
+                      <p className="text-sm font-semibold tabular-nums text-foreground">{formatJstTimeWithSeconds(myOpenSession.start_at)}</p>
+                    </div>
+                  )}
+                </div>
+
+                {isClosingDay && (
+                  <div className="mt-3 flex items-center gap-2 rounded-md bg-[var(--status-pending)]/10 px-2.5 py-1.5">
+                    <AlertTriangle className="h-3.5 w-3.5 text-[var(--status-pending)] shrink-0" />
+                    <span className="text-[11px] text-[var(--status-pending)]">
+                      締め日のため日跨ぎ勤務不可
+                    </span>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          </>
+            </>
           )}
 
           {/* アクションボタン - 状態に応じて必要なものだけ表示 */}
           {!(myStatus === "off" && showThankYou) && (
-          <div className={cn(
-            "grid gap-2",
-            myStatus === "off" ? "grid-cols-1" : "grid-cols-2"
-          )}>
-            {/* 未出勤 → 出勤ボタンのみ */}
-            {myStatus === "off" && (
-              <button
-                type="button"
-                onClick={handleClockIn}
-                className="group flex items-center justify-center gap-2 rounded-xl bg-[var(--primary)] py-3 px-4 text-[var(--primary-foreground)] transition-all hover:bg-[var(--primary)]/90 active:scale-[0.98]"
-              >
-                <Play className="h-5 w-5" />
-                <span className="text-sm font-semibold">出勤する</span>
-              </button>
-            )}
-
-            {/* 勤務中 → 休憩・退勤 */}
-            {myStatus === "working" && (
-              <>
+            <div className={cn(
+              "grid gap-2",
+              myStatus === "off" ? "grid-cols-1" : "grid-cols-2"
+            )}>
+              {/* 未出勤 → 出勤ボタンのみ */}
+              {myStatus === "off" && (
                 <button
                   type="button"
-                  onClick={handleBreakStart}
-                  className="group flex items-center justify-center gap-2 rounded-xl border border-[var(--primary)]/30 bg-[var(--primary)]/10 py-3 px-4 text-foreground transition-all hover:bg-[var(--primary)]/15 active:scale-[0.98]"
+                  onClick={handleClockIn}
+                  className="group flex items-center justify-center gap-2 rounded-xl bg-[var(--primary)] py-3 px-4 text-[var(--primary-foreground)] transition-all hover:bg-[var(--primary)]/90 active:scale-[0.98]"
                 >
-                  <Coffee className="h-5 w-5 text-[var(--primary)]" />
-                  <span className="text-sm font-semibold">休憩</span>
+                  <Play className="h-5 w-5" />
+                  <span className="text-sm font-semibold">出勤する</span>
                 </button>
+              )}
 
+              {/* 勤務中 → 休憩・退勤 */}
+              {myStatus === "working" && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleBreakStart}
+                    className="group flex items-center justify-center gap-2 rounded-xl border border-[var(--primary)]/30 bg-[var(--primary)]/10 py-3 px-4 text-foreground transition-all hover:bg-[var(--primary)]/15 active:scale-[0.98]"
+                  >
+                    <Coffee className="h-5 w-5 text-[var(--primary)]" />
+                    <span className="text-sm font-semibold">休憩</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowClockOutConfirm(true)}
+                    className="group flex items-center justify-center gap-2 rounded-xl border border-[var(--outline-variant)] bg-[var(--surface-container)] py-3 px-4 text-foreground transition-all hover:bg-[var(--surface-container-high)] active:scale-[0.98]"
+                  >
+                    <Square className="h-5 w-5" />
+                    <span className="text-sm font-semibold">退勤</span>
+                  </button>
+                </>
+              )}
+
+              {/* 休憩中 → 休憩終了のみ */}
+              {myStatus === "on_break" && (
                 <button
                   type="button"
-                  onClick={() => setShowClockOutConfirm(true)}
-                  className="group flex items-center justify-center gap-2 rounded-xl border border-[var(--outline-variant)] bg-[var(--surface-container)] py-3 px-4 text-foreground transition-all hover:bg-[var(--surface-container-high)] active:scale-[0.98]"
+                  onClick={handleBreakEnd}
+                  className="group col-span-2 flex items-center justify-center gap-2 rounded-xl bg-[var(--primary)] py-3 px-4 text-[var(--primary-foreground)] transition-all hover:bg-[var(--primary)]/90 active:scale-[0.98]"
                 >
-                  <Square className="h-5 w-5" />
-                  <span className="text-sm font-semibold">退勤</span>
+                  <Play className="h-5 w-5" />
+                  <span className="text-sm font-semibold">休憩終了</span>
                 </button>
-              </>
-            )}
-
-            {/* 休憩中 → 休憩終了のみ */}
-            {myStatus === "on_break" && (
-              <button
-                type="button"
-                onClick={handleBreakEnd}
-                className="group col-span-2 flex items-center justify-center gap-2 rounded-xl bg-[var(--primary)] py-3 px-4 text-[var(--primary-foreground)] transition-all hover:bg-[var(--primary)]/90 active:scale-[0.98]"
-              >
-                <Play className="h-5 w-5" />
-                <span className="text-sm font-semibold">休憩終了</span>
-              </button>
-            )}
-          </div>
+              )}
+            </div>
           )}
 
           {/* タスク入力 */}
@@ -799,6 +761,7 @@ function AttendanceScreen() {
                           });
                         }}
                         className="ml-0.5 rounded-full p-0.5 hover:bg-[var(--primary)]/20 transition-colors"
+                        title="削除"
                       >
                         <svg className="h-3.5 w-3.5 text-[var(--on-surface-variant)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M18 6L6 18M6 6l12 12" />
@@ -995,113 +958,211 @@ function AttendanceScreen() {
               const breakMinutes = getBreakMinutesDb(session);
               const workMinutes = getWorkMinutesDb(session);
               const ownerName = nameByUserId.get(session.user_id) ?? "不明";
-              const draft = taskDraftBySessionId[session.id] ?? formatTaskLines(session.tasks);
               const isOpen = session.end_at === null;
+              const sessionTaskInput = listTaskInputBySessionId[session.id] ?? "";
 
               return (
-                <div key={session.id} className="rounded-2xl bg-[var(--surface-container)] p-4 space-y-4">
-                  {/* ヘッダー */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3">
-                      <div className={cn(
-                        "flex h-10 w-10 items-center justify-center rounded-xl shrink-0",
-                        isOpen ? "bg-[var(--status-approved)]/15" : "bg-[var(--surface-container-high)]"
-                      )}>
-                        {isOpen ? (
-                          <Play className="h-5 w-5 text-[var(--status-approved)]" />
-                        ) : (
-                          <CheckCircle2 className="h-5 w-5 text-[var(--on-surface-variant)]" />
-                        )}
+                <div key={session.id} className="rounded-2xl bg-[var(--surface-container)] overflow-hidden">
+                  {/* ヘッダー部分（日付・時間・統計） */}
+                  <div className="p-4 pb-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {/* ステータスアイコン */}
+                        <div className={cn(
+                          "flex h-9 w-9 items-center justify-center rounded-xl shrink-0",
+                          isOpen ? "bg-[var(--status-approved)]/15" : "bg-[var(--surface-container-high)]"
+                        )}>
+                          {isOpen ? (
+                            <Play className="h-4 w-4 text-[var(--status-approved)]" />
+                          ) : (
+                            <CheckCircle2 className="h-4 w-4 text-[var(--on-surface-variant)]" />
+                          )}
+                        </div>
+                        {/* 日付・時間 */}
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            {role !== "staff" && (
+                              <span className="text-xs font-medium text-[var(--primary)]">{ownerName}</span>
+                            )}
+                            <span className="text-sm font-semibold text-foreground">
+                              {formatJstDateLabel(session.start_at)}
+                            </span>
+                            {session.split_by_closing_boundary && (
+                              <span className="rounded bg-[var(--status-pending)]/15 px-1.5 py-0.5 text-[10px] font-medium text-[var(--status-pending)]">
+                                分割
+                              </span>
+                            )}
+                            {isOpen && (
+                              <span className="rounded bg-[var(--status-approved)]/15 px-1.5 py-0.5 text-[10px] font-medium text-[var(--status-approved)] animate-pulse">
+                                勤務中
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-[var(--on-surface-variant)] tabular-nums mt-0.5">
+                            {formatJstTime(session.start_at)} → {session.end_at ? formatJstTime(session.end_at) : "--:--"}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        {role !== "staff" && (
-                          <p className="text-xs text-[var(--on-surface-variant)] mb-0.5">{ownerName}</p>
-                        )}
-                        <p className="text-sm font-semibold text-foreground">
-                          {formatJstDateLabel(session.start_at)}
-                        </p>
-                        <p className="text-xs text-[var(--on-surface-variant)] mt-0.5">
-                          {formatJstTimeWithSeconds(session.start_at)} 〜 {session.end_at ? formatJstTimeWithSeconds(session.end_at) : "勤務中"}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {session.split_by_closing_boundary && (
-                        <span className="rounded-full bg-[var(--status-pending)]/15 px-2.5 py-1 text-[10px] font-semibold text-[var(--status-pending)]">
-                          分割
-                        </span>
-                      )}
-                      {isOpen && (
-                        <span className="rounded-full bg-[var(--status-approved)]/15 px-2.5 py-1 text-[10px] font-semibold text-[var(--status-approved)]">
-                          勤務中
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* 統計 */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="flex items-center gap-2 rounded-xl bg-[var(--surface-container-high)] px-3 py-2">
-                      <Coffee className="h-4 w-4 text-[var(--on-surface-variant)]" />
-                      <div className="text-xs">
-                        <span className="text-[var(--on-surface-variant)]">休憩</span>
-                        <span className="ml-1 font-semibold text-foreground">{formatDurationMinutes(breakMinutes)}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 rounded-xl bg-[var(--surface-container-high)] px-3 py-2">
-                      <Timer className="h-4 w-4 text-[var(--on-surface-variant)]" />
-                      <div className="text-xs">
-                        <span className="text-[var(--on-surface-variant)]">実働</span>
-                        <span className="ml-1 font-semibold text-foreground">{formatDurationMinutes(workMinutes)}</span>
+                      {/* 統計（右側） */}
+                      <div className="flex items-center gap-3 shrink-0">
+                        <div className="text-right">
+                          <p className="text-[10px] text-[var(--on-surface-variant)]">休憩</p>
+                          <p className="text-sm font-semibold tabular-nums text-foreground">{formatDurationMinutes(breakMinutes)}</p>
+                        </div>
+                        <div className="w-px h-6 bg-[var(--outline-variant)]" />
+                        <div className="text-right">
+                          <p className="text-[10px] text-[var(--on-surface-variant)]">実働</p>
+                          <p className="text-sm font-semibold tabular-nums text-[var(--primary)]">{formatDurationMinutes(workMinutes)}</p>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* タスク */}
-                  {role === "staff" && session.user_id === currentUser.id ? (
-                    <div className="space-y-2">
-                      <textarea
-                        rows={3}
-                        value={draft}
-                        onChange={(event) => {
-                          setTaskDraftBySessionId((prev) => ({ ...prev, [session.id]: event.target.value }));
-                        }}
-                        className="input-base min-h-[80px] resize-y text-sm"
-                        aria-label="やったこと"
-                        placeholder="やったことを入力"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleSaveSessionTasks(session)}
-                        className="flex items-center justify-center gap-2 rounded-xl bg-[var(--surface-container-highest)] py-2.5 px-4 text-xs font-semibold text-foreground transition-colors hover:bg-[var(--outline-variant)]"
-                      >
-                        <Save className="h-3.5 w-3.5" />
-                        保存
-                      </button>
+                  {/* タスク部分 */}
+                  {(role === "staff" && session.user_id === currentUser.id) ? (
+                    <div className="border-t border-[var(--outline-variant)]/50 px-4 py-3 space-y-2">
+                      <p className="text-xs font-medium text-[var(--on-surface-variant)]">やったこと</p>
+                      {/* チップ表示 */}
+                      {session.tasks.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {session.tasks.map((task, idx) => (
+                            <span
+                              key={`${session.id}-chip-${idx}`}
+                              className="inline-flex items-center gap-1 rounded-full bg-[var(--primary)]/10 px-2.5 py-1 text-xs text-foreground"
+                            >
+                              {task}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newTasks = [...session.tasks];
+                                  newTasks.splice(idx, 1);
+                                  // 即保存
+                                  if (session.end_at === null && session.user_id === currentUser.id) {
+                                    saveCurrentTasksDb(newTasks).then((result) => {
+                                      if (!result.ok) {
+                                        toast({ description: result.error ?? "削除に失敗しました", variant: "destructive" });
+                                      }
+                                    });
+                                  } else {
+                                    saveSessionTasksDb(session.id, newTasks).then((result) => {
+                                      if (!result.ok) {
+                                        toast({ description: result.error ?? "削除に失敗しました", variant: "destructive" });
+                                      }
+                                    });
+                                  }
+                                  refreshData();
+                                }}
+                                className="rounded-full p-0.5 hover:bg-[var(--primary)]/20 transition-colors"
+                                title="削除"
+                              >
+                                <svg className="h-3 w-3 text-[var(--on-surface-variant)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <path d="M18 6L6 18M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {session.tasks.length === 0 && (
+                        <p className="text-xs text-[var(--on-surface-variant)]/60">まだ登録されていません</p>
+                      )}
+                      {/* 入力欄 */}
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="追加..."
+                          value={sessionTaskInput}
+                          onChange={(e) => setListTaskInputBySessionId((prev) => ({ ...prev, [session.id]: e.target.value }))}
+                          className="flex-1 min-w-0 rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-3 py-2 text-sm text-foreground placeholder:text-[var(--on-surface-variant)]/50 focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+                          onKeyDown={(e) => {
+                            if (e.nativeEvent.isComposing) return;
+                            if (e.key === "Enter" && sessionTaskInput.trim()) {
+                              e.preventDefault();
+                              const newTasks = [...session.tasks, sessionTaskInput.trim()];
+                              setListTaskInputBySessionId((prev) => ({ ...prev, [session.id]: "" }));
+                              // 即保存
+                              if (session.end_at === null && session.user_id === currentUser.id) {
+                                saveCurrentTasksDb(newTasks).then((result) => {
+                                  if (result.ok) {
+                                    toast({ description: "追加しました" });
+                                  } else {
+                                    toast({ description: result.error ?? "追加に失敗しました", variant: "destructive" });
+                                  }
+                                });
+                              } else {
+                                saveSessionTasksDb(session.id, newTasks).then((result) => {
+                                  if (result.ok) {
+                                    toast({ description: "追加しました" });
+                                  } else {
+                                    toast({ description: result.error ?? "追加に失敗しました", variant: "destructive" });
+                                  }
+                                });
+                              }
+                              refreshData();
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          disabled={!sessionTaskInput.trim()}
+                          onClick={() => {
+                            if (!sessionTaskInput.trim()) return;
+                            const newTasks = [...session.tasks, sessionTaskInput.trim()];
+                            setListTaskInputBySessionId((prev) => ({ ...prev, [session.id]: "" }));
+                            // 即保存
+                            if (session.end_at === null && session.user_id === currentUser.id) {
+                              saveCurrentTasksDb(newTasks).then((result) => {
+                                if (result.ok) {
+                                  toast({ description: "追加しました" });
+                                } else {
+                                  toast({ description: result.error ?? "追加に失敗しました", variant: "destructive" });
+                                }
+                              });
+                            } else {
+                              saveSessionTasksDb(session.id, newTasks).then((result) => {
+                                if (result.ok) {
+                                  toast({ description: "追加しました" });
+                                } else {
+                                  toast({ description: result.error ?? "追加に失敗しました", variant: "destructive" });
+                                }
+                              });
+                            }
+                            refreshData();
+                          }}
+                          className="shrink-0 rounded-lg bg-[var(--primary)] px-3 py-2 text-sm font-medium text-[var(--primary-foreground)] transition-colors hover:bg-[var(--primary)]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          追加
+                        </button>
+                      </div>
                     </div>
                   ) : session.tasks.length > 0 && (
-                    <div className="rounded-xl bg-[var(--surface-container-high)] px-3 py-2.5">
-                      <ul className="space-y-1 text-xs text-foreground">
-                        {session.tasks.map((item, index) => (
-                          <li key={`${session.id}-task-${index}`} className="flex items-start gap-2">
-                            <span className="text-[var(--on-surface-variant)]">•</span>
-                            <span>{item}</span>
-                          </li>
+                    <div className="border-t border-[var(--outline-variant)]/50 px-4 py-3">
+                      <p className="text-xs font-medium text-[var(--on-surface-variant)] mb-2">やったこと</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {session.tasks.map((task, idx) => (
+                          <span
+                            key={`${session.id}-task-${idx}`}
+                            className="rounded-full bg-[var(--surface-container-high)] px-2.5 py-1 text-xs text-foreground"
+                          >
+                            {task}
+                          </span>
                         ))}
-                      </ul>
+                      </div>
                     </div>
                   )}
 
                   {/* 修正ボタン */}
                   {canCorrect && (
-                    <button
-                      type="button"
-                      onClick={() => openCorrection(session)}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--outline-variant)] py-2.5 text-xs font-medium text-[var(--primary)] transition-colors hover:bg-[var(--primary)]/5"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                      勤怠を修正
-                    </button>
+                    <div className="border-t border-[var(--outline-variant)]/50 px-4 py-2">
+                      <button
+                        type="button"
+                        onClick={() => openCorrection(session)}
+                        className="flex w-full items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-[var(--primary)] transition-colors hover:text-[var(--primary)]/80"
+                      >
+                        <Pencil className="h-3 w-3" />
+                        修正
+                      </button>
+                    </div>
                   )}
                 </div>
               );
@@ -1266,6 +1327,7 @@ function AttendanceScreen() {
                           setHomeTaskDraft(formatTaskLines(tasks));
                         }}
                         className="ml-0.5 rounded-full p-0.5 hover:bg-[var(--primary)]/20 transition-colors"
+                        title="削除"
                       >
                         <svg className="h-3.5 w-3.5 text-[var(--on-surface-variant)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M18 6L6 18M6 6l12 12" />
