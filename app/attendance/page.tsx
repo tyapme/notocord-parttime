@@ -1599,11 +1599,11 @@ function AttendanceScreen() {
           <div className="space-y-4">
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">開始時刻</label>
-              <input type="datetime-local" value={editStartAt} onChange={(event) => setEditStartAt(event.target.value)} className="input-base" aria-label="開始時刻" />
+              <input type="datetime-local" value={editStartAt} onChange={(event) => setEditStartAt(event.target.value)} className="input-base w-full min-w-0" aria-label="開始時刻" />
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">終了時刻（任意）</label>
-              <input type="datetime-local" value={editEndAt} onChange={(event) => setEditEndAt(event.target.value)} className="input-base" aria-label="終了時刻" />
+              <input type="datetime-local" value={editEndAt} onChange={(event) => setEditEndAt(event.target.value)} className="input-base w-full min-w-0" aria-label="終了時刻" />
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">修正メッセージ（必須）</label>

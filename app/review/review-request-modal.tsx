@@ -14,13 +14,15 @@ import {
 } from "@/lib/datetime";
 import { NearTermContactWarning } from "@/components/near-term-contact-warning";
 import { RequestHistoryToggle } from "@/components/request-history-toggle";
-import { FixDetail, FlexDetail, RadioOption, SelectInput, TypeTag } from "./review-modal-sections";
+import { FixDetail, FlexDetail, RadioOption, TypeTag } from "./review-modal-sections";
 import { isNearTermShiftRequest } from "@/lib/request-urgency";
 
 type FixAction = "approve" | "modify" | "reject";
 type FlexAction = "approve" | "modify" | "reject";
 
 const DATE_OPTS = buildDateOptions(120);
+const DATE_MIN = DATE_OPTS[0]?.value ?? "";
+const DATE_MAX = DATE_OPTS[DATE_OPTS.length - 1]?.value ?? "";
 
 const FIX_ACTIONS: { value: FixAction; label: string; desc: string }[] = [
   { value: "approve", label: "承認", desc: "申請通りに承認" },
@@ -51,7 +53,6 @@ export function ReviewRequestModal({
 
   const [fixAction, setFixAction] = useState<FixAction | null>(null);
   const [approvedStartDate, setApprovedStartDate] = useState("");
-  const [approvedEndDate, setApprovedEndDate] = useState("");
   const [approvedStart, setApprovedStart] = useState("");
   const [approvedEnd, setApprovedEnd] = useState("");
   const [changeReason, setChangeReason] = useState("");
@@ -68,7 +69,6 @@ export function ReviewRequestModal({
   useEffect(() => {
     setFixAction(null);
     setApprovedStartDate("");
-    setApprovedEndDate("");
     setApprovedStart("");
     setApprovedEnd("");
     setChangeReason("");
@@ -84,7 +84,6 @@ export function ReviewRequestModal({
       const startBase = fix.approvedStartAt ?? fix.requestedStartAt;
       const endBase = fix.approvedEndAt ?? fix.requestedEndAt;
       setApprovedStartDate(getJstDateValue(startBase));
-      setApprovedEndDate(getJstDateValue(endBase));
       setApprovedStart(getJstTimeValue(startBase));
       setApprovedEnd(getJstTimeValue(endBase));
       if (fix.decisionType === "modify") {
@@ -110,12 +109,7 @@ export function ReviewRequestModal({
     (request.type === "fix" && isApproved && approvedEditMode) || fixAction === "modify";
   const fixDurationMinutes = (() => {
     if (!canUseFixEditFields) return null;
-    if (!approvedStartDate || !approvedEndDate || !approvedStart || !approvedEnd) return null;
-    if (approvedStartDate !== approvedEndDate) {
-      const startIso = combineDateTimeToIso(approvedStartDate, approvedStart);
-      const endIso = combineDateTimeToIso(approvedEndDate, approvedEnd);
-      return Math.floor((new Date(endIso).getTime() - new Date(startIso).getTime()) / 60000);
-    }
+    if (!approvedStartDate || !approvedStart || !approvedEnd) return null;
     return diffMinutes(approvedStart, approvedEnd);
   })();
 
@@ -130,12 +124,11 @@ export function ReviewRequestModal({
   const fixDraftRange =
     request.type === "fix" &&
     approvedStartDate &&
-    approvedEndDate &&
     approvedStart &&
     approvedEnd
       ? {
           startIso: combineDateTimeToIso(approvedStartDate, approvedStart),
-          endIso: combineDateTimeToIso(approvedEndDate, approvedEnd),
+          endIso: combineDateTimeToIso(approvedStartDate, approvedEnd),
         }
       : null;
   const fixOutsideRequestedWindow =
@@ -153,7 +146,7 @@ export function ReviewRequestModal({
     if (!fixAction) return false;
     if (fixAction === "approve") return true;
     if (fixAction === "reject") return true;
-    if (!approvedStartDate || !approvedEndDate || !approvedStart || !approvedEnd) return false;
+    if (!approvedStartDate || !approvedStart || !approvedEnd) return false;
     if (fixAction === "modify" && !changeReason.trim()) return false;
     if (fixAction === "modify" && fixDurationError) return false;
     return fixAction === "modify";
@@ -177,10 +170,10 @@ export function ReviewRequestModal({
   const canSaveApprovedEdit = (() => {
     if (!isApproved || !approvedEditMode) return false;
     if (request.type === "fix") {
-      if (!approvedStartDate || !approvedEndDate || !approvedStart || !approvedEnd) return false;
+      if (!approvedStartDate || !approvedStart || !approvedEnd) return false;
       if (fixDurationError) return false;
       const nextStart = combineDateTimeToIso(approvedStartDate, approvedStart);
-      const nextEnd = combineDateTimeToIso(approvedEndDate, approvedEnd);
+      const nextEnd = combineDateTimeToIso(approvedStartDate, approvedEnd);
       const fix = request as FixRequest;
       const changedFromRequested =
         nextStart !== fix.requestedStartAt || nextEnd !== fix.requestedEndAt;
@@ -205,7 +198,7 @@ export function ReviewRequestModal({
       return;
     }
     const approvedStartAt = combineDateTimeToIso(approvedStartDate, approvedStart);
-    const approvedEndAt = combineDateTimeToIso(approvedEndDate, approvedEnd);
+    const approvedEndAt = combineDateTimeToIso(approvedStartDate, approvedEnd);
     const ok = await reviewFix(request.id, {
       decisionType: "modify",
       approvedStartAt,
@@ -247,8 +240,8 @@ export function ReviewRequestModal({
     setApprovedEditError(null);
 
     if (request.type === "fix") {
-      if (!approvedStartDate || !approvedEndDate || !approvedStart || !approvedEnd) {
-        setApprovedEditError("開始日付・終了日付・開始時刻・終了時刻を入力してください");
+      if (!approvedStartDate || !approvedStart || !approvedEnd) {
+        setApprovedEditError("日付・開始時刻・終了時刻を入力してください");
         return;
       }
       if (fixDurationError) {
@@ -256,7 +249,7 @@ export function ReviewRequestModal({
         return;
       }
       const nextStart = combineDateTimeToIso(approvedStartDate, approvedStart);
-      const nextEnd = combineDateTimeToIso(approvedEndDate, approvedEnd);
+      const nextEnd = combineDateTimeToIso(approvedStartDate, approvedEnd);
       const fix = request as FixRequest;
       const changedFromRequested =
         nextStart !== fix.requestedStartAt || nextEnd !== fix.requestedEndAt;
@@ -341,16 +334,25 @@ export function ReviewRequestModal({
                   </div>
                   {fixAction === "modify" && (
                     <div className="rounded-[var(--ds-radius-md)] border border-border bg-muted/30 px-4 py-4 space-y-3 mt-1">
-                      <SelectInput label="開始日付" value={approvedStartDate} onChange={setApprovedStartDate} options={DATE_OPTS} />
-                      <SelectInput label="終了日付" value={approvedEndDate} onChange={setApprovedEndDate} options={DATE_OPTS} />
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1.5">
+                      <div className="max-w-[15rem] space-y-1.5">
+                        <label className="text-xs font-medium text-muted-foreground">日付</label>
+                        <input
+                          type="date"
+                          value={approvedStartDate}
+                          onChange={(e) => setApprovedStartDate(e.target.value)}
+                          min={DATE_MIN}
+                          max={DATE_MAX}
+                          className="input-base w-full min-w-0 md:text-sm"
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div className="min-w-0 space-y-1.5">
                           <label className="text-xs font-medium text-muted-foreground">開始時刻</label>
-                          <input type="time" step={300} value={approvedStart} onChange={(e) => setApprovedStart(e.target.value)} className="input-base md:text-sm" />
+                          <input type="time" step={300} value={approvedStart} onChange={(e) => setApprovedStart(e.target.value)} className="input-base w-full min-w-0 md:text-sm" />
                         </div>
-                        <div className="space-y-1.5">
+                        <div className="min-w-0 space-y-1.5">
                           <label className="text-xs font-medium text-muted-foreground">終了時刻</label>
-                          <input type="time" step={300} value={approvedEnd} onChange={(e) => setApprovedEnd(e.target.value)} className="input-base md:text-sm" />
+                          <input type="time" step={300} value={approvedEnd} onChange={(e) => setApprovedEnd(e.target.value)} className="input-base w-full min-w-0 md:text-sm" />
                         </div>
                       </div>
                       {fixDurationError && <p className="text-xs font-medium text-[var(--status-rejected)]">{fixDurationError}</p>}
@@ -527,16 +529,25 @@ export function ReviewRequestModal({
                 <>
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">確定内容を編集</p>
                   <div className="rounded-[var(--ds-radius-md)] border border-border bg-muted/30 px-4 py-4 space-y-3">
-                    <SelectInput label="開始日付" value={approvedStartDate} onChange={setApprovedStartDate} options={DATE_OPTS} />
-                    <SelectInput label="終了日付" value={approvedEndDate} onChange={setApprovedEndDate} options={DATE_OPTS} />
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1.5">
+                    <div className="max-w-[15rem] space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">日付</label>
+                      <input
+                        type="date"
+                        value={approvedStartDate}
+                        onChange={(e) => setApprovedStartDate(e.target.value)}
+                        min={DATE_MIN}
+                        max={DATE_MAX}
+                        className="input-base w-full min-w-0 md:text-sm"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div className="min-w-0 space-y-1.5">
                         <label className="text-xs font-medium text-muted-foreground">開始時刻</label>
-                        <input type="time" step={300} value={approvedStart} onChange={(e) => setApprovedStart(e.target.value)} className="input-base md:text-sm" />
+                        <input type="time" step={300} value={approvedStart} onChange={(e) => setApprovedStart(e.target.value)} className="input-base w-full min-w-0 md:text-sm" />
                       </div>
-                      <div className="space-y-1.5">
+                      <div className="min-w-0 space-y-1.5">
                         <label className="text-xs font-medium text-muted-foreground">終了時刻</label>
-                        <input type="time" step={300} value={approvedEnd} onChange={(e) => setApprovedEnd(e.target.value)} className="input-base md:text-sm" />
+                        <input type="time" step={300} value={approvedEnd} onChange={(e) => setApprovedEnd(e.target.value)} className="input-base w-full min-w-0 md:text-sm" />
                       </div>
                     </div>
                     {fixDurationError && <p className="text-xs font-medium text-[var(--status-rejected)]">{fixDurationError}</p>}

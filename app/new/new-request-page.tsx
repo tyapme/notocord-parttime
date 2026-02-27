@@ -163,25 +163,25 @@ export function NewRequestScreen({ onSuccess }: { onSuccess: () => void }) {
               className="max-w-[15rem]"
               inputClassName="text-base tabular-nums"
             />
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="min-w-0 space-y-1.5">
                 <label className="text-sm font-medium text-foreground">開始時刻</label>
                 <input
                   type="time"
                   step={300}
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                  className="input-base"
+                  className="input-base w-full min-w-0"
                 />
               </div>
-              <div className="space-y-1.5">
+              <div className="min-w-0 space-y-1.5">
                 <label className="text-sm font-medium text-foreground">終了時刻</label>
                 <input
                   type="time"
                   step={300}
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
-                  className="input-base"
+                  className="input-base w-full min-w-0"
                 />
               </div>
             </div>

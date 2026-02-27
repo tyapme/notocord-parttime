@@ -5,7 +5,6 @@ import { useAppStore } from "@/lib/store";
 import { FixRequest, FlexRequest, Request } from "@/lib/types";
 import {
   addMonths,
-  buildDateOptions,
   buildWeekOptions,
   combineDateTimeToIso,
   diffMinutes,
@@ -74,9 +73,6 @@ export function StaffRequestModal({
   const todayYmd = formatYmd(new Date());
   const minFixDate = todayYmd;
   const maxDate = addMonths(todayYmd, 3);
-  const dateOptions = buildDateOptions(120).filter(
-    (d) => d.value >= minFixDate && d.value <= maxDate
-  );
   const minFlexWeekMonday = getISOMonday(todayYmd);
   const weekOptions = buildWeekOptions(0, 52).filter(
     (w) => w.monday >= minFlexWeekMonday && w.monday <= maxDate
@@ -325,33 +321,36 @@ export function StaffRequestModal({
           {request.status === "approved"}
           {request.type === "fix" ? (
             <>
-              <SelectField
-                label="日付"
-                value={editFixDate}
-                onChange={setEditFixDate}
-                options={dateOptions.map((d) => ({ value: d.value, label: d.label }))}
-                placeholder="日付を選択"
-                className="max-w-[15rem]"
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
+              <div className="max-w-[15rem] space-y-1.5">
+                <label className="text-sm font-medium text-foreground">日付</label>
+                <input
+                  type="date"
+                  value={editFixDate}
+                  onChange={(e) => setEditFixDate(e.target.value)}
+                  min={minFixDate}
+                  max={maxDate}
+                  className="input-base w-full min-w-0"
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="min-w-0 space-y-1.5">
                   <label className="text-sm font-medium text-foreground">開始時刻</label>
                   <input
                     type="time"
                     step={300}
                     value={editStartTime}
                     onChange={(e) => setEditStartTime(e.target.value)}
-                    className="input-base"
+                    className="input-base w-full min-w-0"
                   />
                 </div>
-                <div className="space-y-1.5">
+                <div className="min-w-0 space-y-1.5">
                   <label className="text-sm font-medium text-foreground">終了時刻</label>
                   <input
                     type="time"
                     step={300}
                     value={editEndTime}
                     onChange={(e) => setEditEndTime(e.target.value)}
-                    className="input-base"
+                    className="input-base w-full min-w-0"
                   />
                 </div>
               </div>
