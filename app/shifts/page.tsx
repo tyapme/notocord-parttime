@@ -69,9 +69,9 @@ function PeriodStepButton({
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="grid h-10 w-10 place-items-center rounded-full border border-[var(--outline-variant)] bg-[var(--surface-container-high)] text-[var(--on-surface)] shadow-[0_1px_2px_rgba(0,0,0,.08)] transition-colors hover:bg-[var(--surface-container-highest)]"
+      className="grid h-9 w-9 place-items-center rounded-full border border-[var(--outline-variant)] bg-[var(--surface-container-high)] text-[var(--on-surface-variant)] shadow-[0_1px_2px_rgba(0,0,0,.06)] transition-colors hover:bg-[var(--surface-container-highest)] hover:text-foreground"
     >
-      <Icon className="text-[var(--on-surface)]" style={{ width: 24, height: 24 }} strokeWidth={2.8} />
+      <Icon className="text-current" style={{ width: 20, height: 20 }} strokeWidth={2.6} />
     </button>
   );
 }
