@@ -13,9 +13,16 @@ import {
   Pencil,
   Users,
   Pause,
+  ChevronDown,
+  Save,
 } from "lucide-react";
 import { SelectField } from "@/components/select-field";
 import { ShiftRequestModalFrame } from "@/components/shift-request-modal-frame";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   AttendancePeriod,
   formatDurationMinutes,
@@ -268,6 +275,7 @@ function AttendanceScreen() {
   const [editEndAt, setEditEndAt] = useState("");
   const [editMessage, setEditMessage] = useState("");
   const [manageFilterUserId, setManageFilterUserId] = useState("all");
+  const [showClockOutConfirm, setShowClockOutConfirm] = useState(false);
 
   // 現在時刻を1秒ごとに更新
   useEffect(() => {
@@ -609,81 +617,6 @@ function AttendanceScreen() {
             )}
           </div>
 
-          {/* タイムライン（勤務中のみ表示） */}
-          {myStatus !== "off" && myOpenSession && (
-            <div className="rounded-2xl bg-[var(--surface-container)] p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <Timer className="h-4 w-4 text-[var(--primary)]" />
-                <p className="text-sm font-semibold text-foreground">今日のタイムライン</p>
-              </div>
-              <div className="relative pl-4">
-                {/* タイムライン縦線 */}
-                <div className="absolute left-[7px] top-1 bottom-1 w-0.5 bg-[var(--outline-variant)]" />
-                
-                <div className="space-y-3">
-                  {buildTimelineEvents(myOpenSession).map((event, idx) => {
-                    const isLast = idx === buildTimelineEvents(myOpenSession).length - 1 && !myOpenSession.end_at;
-                    return (
-                      <div key={event.id} className="relative flex items-center gap-3">
-                        {/* ドット */}
-                        <div
-                          className={cn(
-                            "absolute -left-4 flex h-4 w-4 items-center justify-center rounded-full border-2 bg-background",
-                            event.type === "work_start" && "border-[var(--status-approved)]",
-                            event.type === "work_end" && "border-[var(--on-surface-variant)]",
-                            event.type === "break_start" && "border-[var(--primary)]",
-                            event.type === "break_end" && "border-[var(--primary)]",
-                            isLast && "animate-pulse"
-                          )}
-                        >
-                          <div
-                            className={cn(
-                              "h-2 w-2 rounded-full",
-                              event.type === "work_start" && "bg-[var(--status-approved)]",
-                              event.type === "work_end" && "bg-[var(--on-surface-variant)]",
-                              event.type === "break_start" && "bg-[var(--primary)]",
-                              event.type === "break_end" && "bg-[var(--primary)]"
-                            )}
-                          />
-                        </div>
-                        {/* 時刻とラベル */}
-                        <div className="flex flex-1 items-center justify-between">
-                          <span className="text-sm text-foreground">{event.label}</span>
-                          <span className="text-sm font-medium tabular-nums text-[var(--on-surface-variant)]">
-                            {formatJstTime(event.time.toISOString())}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  
-                  {/* 現在進行中インジケーター */}
-                  {!myOpenSession.end_at && (
-                    <div className="relative flex items-center gap-3">
-                      <div className="absolute -left-4 flex h-4 w-4 items-center justify-center">
-                        <div className={cn(
-                          "h-3 w-3 rounded-full animate-pulse",
-                          myStatus === "working" ? "bg-[var(--status-approved)]" : "bg-[var(--primary)]"
-                        )} />
-                      </div>
-                      <div className="flex flex-1 items-center justify-between">
-                        <span className={cn(
-                          "text-sm font-medium",
-                          myStatus === "working" ? "text-[var(--status-approved)]" : "text-[var(--primary)]"
-                        )}>
-                          {myStatus === "working" ? "勤務中..." : "休憩中..."}
-                        </span>
-                        <span className="text-sm font-medium tabular-nums text-foreground">
-                          {formatCurrentTimeJst(currentTime)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* アクションボタン - 状態に応じて必要なものだけ表示 */}
           <div className={cn(
             "grid gap-2",
@@ -715,7 +648,7 @@ function AttendanceScreen() {
 
                 <button
                   type="button"
-                  onClick={handleClockOut}
+                  onClick={() => setShowClockOutConfirm(true)}
                   className="group flex items-center justify-center gap-2 rounded-xl border border-[var(--outline-variant)] bg-[var(--surface-container)] py-3 px-4 text-foreground transition-all hover:bg-[var(--surface-container-high)] active:scale-[0.98]"
                 >
                   <Square className="h-5 w-5" />
@@ -818,6 +751,87 @@ function AttendanceScreen() {
                 }}
               />
             </div>
+          )}
+
+          {/* タイムライン（勤務中のみ表示・アコーディオン） */}
+          {myStatus !== "off" && myOpenSession && (
+            <Collapsible defaultOpen={false}>
+              <CollapsibleTrigger className="flex w-full items-center justify-between rounded-xl bg-[var(--surface-container)] px-4 py-3 text-left transition-colors hover:bg-[var(--surface-container-high)] group">
+                <div className="flex items-center gap-2">
+                  <Timer className="h-4 w-4 text-[var(--primary)]" />
+                  <span className="text-sm font-medium text-foreground">タイムライン</span>
+                  <span className="text-xs text-[var(--on-surface-variant)]">
+                    ({buildTimelineEvents(myOpenSession).length}件)
+                  </span>
+                </div>
+                <ChevronDown className="h-4 w-4 text-[var(--on-surface-variant)] transition-transform group-data-[state=open]:rotate-180" />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="mt-2 rounded-xl bg-[var(--surface-container)] px-4 py-3">
+                  <div className="relative pl-4">
+                    {/* タイムライン縦線 */}
+                    <div className="absolute left-[7px] top-1 bottom-1 w-0.5 bg-[var(--outline-variant)]" />
+                    
+                    <div className="space-y-2.5">
+                      {buildTimelineEvents(myOpenSession).map((event) => (
+                        <div key={event.id} className="relative flex items-center gap-3">
+                          {/* ドット */}
+                          <div
+                            className={cn(
+                              "absolute -left-4 flex h-4 w-4 items-center justify-center rounded-full border-2 bg-[var(--surface-container)]",
+                              event.type === "work_start" && "border-[var(--status-approved)]",
+                              event.type === "work_end" && "border-[var(--on-surface-variant)]",
+                              event.type === "break_start" && "border-[var(--primary)]",
+                              event.type === "break_end" && "border-[var(--primary)]"
+                            )}
+                          >
+                            <div
+                              className={cn(
+                                "h-2 w-2 rounded-full",
+                                event.type === "work_start" && "bg-[var(--status-approved)]",
+                                event.type === "work_end" && "bg-[var(--on-surface-variant)]",
+                                event.type === "break_start" && "bg-[var(--primary)]",
+                                event.type === "break_end" && "bg-[var(--primary)]"
+                              )}
+                            />
+                          </div>
+                          {/* 時刻とラベル */}
+                          <div className="flex flex-1 items-center justify-between">
+                            <span className="text-sm text-foreground">{event.label}</span>
+                            <span className="text-sm font-medium tabular-nums text-[var(--on-surface-variant)]">
+                              {formatJstTime(event.time.toISOString())}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {/* 現在進行中インジケーター（点滅はここだけ） */}
+                      {!myOpenSession.end_at && (
+                        <div className="relative flex items-center gap-3">
+                          <div className="absolute -left-4 flex h-4 w-4 items-center justify-center bg-[var(--surface-container)]">
+                            <div className={cn(
+                              "h-3 w-3 rounded-full animate-pulse",
+                              myStatus === "working" ? "bg-[var(--status-approved)]" : "bg-[var(--primary)]"
+                            )} />
+                          </div>
+                          <div className="flex flex-1 items-center justify-between">
+                            <span className={cn(
+                              "text-sm font-medium",
+                              myStatus === "working" ? "text-[var(--status-approved)]" : "text-[var(--primary)]"
+                            )}>
+                              {myStatus === "working" ? "勤務中..." : "休憩中..."}
+                            </span>
+                            <span className="text-sm font-medium tabular-nums text-foreground">
+                              {formatCurrentTimeJst(currentTime)}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           )}
         </div>
       )}
@@ -1069,6 +1083,80 @@ function AttendanceScreen() {
               <label className="text-sm font-medium text-foreground">修正メッセージ（必須）</label>
               <textarea value={editMessage} onChange={(event) => setEditMessage(event.target.value)} rows={4} className="input-base min-h-[96px] resize-y" aria-label="修正メッセージ" placeholder="修正理由を入力" />
             </div>
+          </div>
+        </ShiftRequestModalFrame>
+      )}
+
+      {/* 退勤確認モーダル */}
+      {showClockOutConfirm && (
+        <ShiftRequestModalFrame
+          header={<span className="text-base font-semibold">退勤確認</span>}
+          onClose={() => setShowClockOutConfirm(false)}
+          footer={
+            <div className="flex gap-3 pt-4">
+              <button
+                type="button"
+                onClick={async () => {
+                  const tasks = parseTaskLines(homeTaskDraft);
+                  if (tasks.length === 0) {
+                    setError("「やったこと」を1件以上入力してください");
+                    return;
+                  }
+                  await handleClockOut();
+                  setShowClockOutConfirm(false);
+                }}
+                disabled={parseTaskLines(homeTaskDraft).length === 0}
+                className={cn(
+                  "flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all",
+                  parseTaskLines(homeTaskDraft).length === 0
+                    ? "bg-muted text-muted-foreground cursor-not-allowed"
+                    : "bg-[var(--status-rejected)] text-white hover:bg-[var(--status-rejected)]/90"
+                )}
+              >
+                退勤する
+              </button>
+            </div>
+          }
+        >
+          <div className="space-y-4 px-5 py-4">
+            <p className="text-sm text-[var(--on-surface-variant)]">
+              退勤してよろしいですか？
+            </p>
+
+            {/* やったこと一覧 */}
+            <div className="rounded-xl bg-[var(--surface-container)] p-4">
+              <p className="text-xs font-medium text-[var(--on-surface-variant)] mb-2">やったこと</p>
+              {parseTaskLines(homeTaskDraft).length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {parseTaskLines(homeTaskDraft).map((task, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center rounded-full bg-[var(--primary)]/10 px-3 py-1 text-sm text-foreground"
+                    >
+                      {task}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-[var(--status-rejected)]">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span className="text-sm">「やったこと」を入力してください</span>
+                </div>
+              )}
+            </div>
+
+            {myOpenSession && (
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-lg bg-[var(--surface-container)] p-3">
+                  <p className="text-xs text-[var(--on-surface-variant)]">出勤時刻</p>
+                  <p className="font-semibold tabular-nums">{formatJstTimeWithSeconds(myOpenSession.start_at)}</p>
+                </div>
+                <div className="rounded-lg bg-[var(--surface-container)] p-3">
+                  <p className="text-xs text-[var(--on-surface-variant)]">実働時間</p>
+                  <p className="font-semibold tabular-nums">{formatElapsedTime(calculateWorkingSeconds(myOpenSession, currentTime))}</p>
+                </div>
+              </div>
+            )}
           </div>
         </ShiftRequestModalFrame>
       )}
