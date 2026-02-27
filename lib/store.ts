@@ -177,7 +177,8 @@ interface AppState {
   error: string | null;
 
   init: () => Promise<void>;
-  sendMagicLink: (email: string) => Promise<{ ok: boolean; error?: string }>;
+  sendSignInCode: (email: string) => Promise<{ ok: boolean; error?: string; challenge?: string; code?: string; expiresAt?: number }>;
+  verifySignInCode: (payload: { email: string; code: string; challenge: string }) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
 
   refresh: () => Promise<void>;
@@ -262,20 +263,42 @@ export const useAppStore = create<AppState>()((set, get) => ({
     }
   },
 
-  sendMagicLink: async (email: string) => {
+  sendSignInCode: async (email: string) => {
     try {
-      const res = await fetch("/api/auth/magic-link", {
+      const res = await fetch("/api/auth/send-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
       const data = await res.json();
       if (!res.ok) {
-        return { ok: false, error: data?.error || "送信に失敗しました" };
+        return { ok: false, error: data?.error || "認証コードの発行に失敗しました" };
+      }
+      return {
+        ok: true,
+        challenge: data?.challenge,
+        code: data?.code,
+        expiresAt: data?.expiresAt,
+      };
+    } catch (err) {
+      return { ok: false, error: "認証コードの発行に失敗しました" };
+    }
+  },
+
+  verifySignInCode: async ({ email, code, challenge }) => {
+    try {
+      const res = await fetch("/api/auth/verify-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code, challenge }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        return { ok: false, error: data?.error || "サインインに失敗しました" };
       }
       return { ok: true };
-    } catch (err) {
-      return { ok: false, error: "送信に失敗しました" };
+    } catch {
+      return { ok: false, error: "サインインに失敗しました" };
     }
   },
 

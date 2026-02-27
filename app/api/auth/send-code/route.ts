@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { issueSigninCode } from "@/lib/auth/send-signin-code";
 
-// Backward compatibility endpoint.
-// The app now uses code-based sign-in instead of magic links.
 export async function POST(req: Request) {
   try {
     const body = await req.json();

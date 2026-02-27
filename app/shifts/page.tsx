@@ -69,7 +69,7 @@ function PeriodStepButton({
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="grid h-9 w-9 place-items-center rounded-full border border-[var(--outline-variant)] bg-[var(--surface-container-high)] text-[var(--on-surface-variant)] shadow-[0_1px_2px_rgba(0,0,0,.06)] transition-colors hover:bg-[var(--surface-container-highest)] hover:text-foreground"
+      className="grid h-9 w-9 place-items-center rounded-full border border-[var(--outline-variant)] bg-[var(--primary-container)] text-[var(--on-primary-container)] shadow-[0_1px_2px_rgba(20,35,72,.12)] transition-colors hover:bg-[color-mix(in_oklab,var(--primary-container)_90%,white_10%)]"
     >
       <Icon className="text-current" style={{ width: 20, height: 20 }} strokeWidth={2.6} />
     </button>
