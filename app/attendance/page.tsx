@@ -50,9 +50,10 @@ import {
 import { supabase } from "@/lib/supabase/client";
 import { formatJstDateLabel, formatJstDateTime, formatJstTime, formatJstTimeWithSeconds, getISOWeekNumber, formatYmd } from "@/lib/datetime";
 import { useAppStore } from "@/lib/store";
-import type { FixRequest, FlexRequest } from "@/lib/types";
+import type { FixRequest, FlexRequest, HourlyRate } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import { getHourlyRates } from "@/lib/hourly-rate";
 
 type PeriodOption = {
   key: string;
@@ -282,6 +283,16 @@ function AttendanceScreen() {
   const [clockInWarningType, setClockInWarningType] = useState<null | "no-shift" | "early" | "late" | "overtime">(null);
   const [showThankYou, setShowThankYou] = useState(false);
   const [modalTaskInput, setModalTaskInput] = useState("");
+  const [hourlyRates, setHourlyRates] = useState<HourlyRate[]>([]);
+
+  // 現在ユーザーの時給を取得
+  useEffect(() => {
+    if (currentUser?.id) {
+      void getHourlyRates(currentUser.id).then((result) => {
+        if (result.ok) setHourlyRates(result.data);
+      });
+    }
+  }, [currentUser?.id]);
 
   // 現在時刻を1秒ごとに更新
   useEffect(() => {
@@ -1348,9 +1359,15 @@ function AttendanceScreen() {
                 .map(s => s.start_at.split("T")[0])
             );
             const workDays = uniqueDates.size;
-            const avgWorkMinutes = workDays > 0 ? Math.round(totalWorkMinutes / workDays) : 0;
             const totalHours = Math.floor(totalWorkMinutes / 60);
             const totalMins = totalWorkMinutes % 60;
+
+            // 推定給与を計算
+            // 期間の最終日から適用される時給を取得
+            const periodEndDate = currentPeriod.endAt.split("T")[0];
+            const applicableRate = hourlyRates.find((r) => r.effectiveUntil >= periodEndDate);
+            const hourlyRate = applicableRate?.hourlyRate ?? 0;
+            const estimatedSalary = Math.floor((totalWorkMinutes / 60) * hourlyRate);
 
             return (
               <div className="rounded-2xl bg-[var(--primary-container)] p-4">
@@ -1374,9 +1391,9 @@ function AttendanceScreen() {
                     </p>
                   </div>
                   <div className="rounded-xl bg-[var(--surface-container-lowest)] p-3 text-center">
-                    <p className="text-[10px] text-[var(--on-surface-variant)] mb-1">総労働/出勤日</p>
+                    <p className="text-[10px] text-[var(--on-surface-variant)] mb-1">推定給与</p>
                     <p className="text-lg font-bold tabular-nums text-foreground">
-                      {formatDurationMinutes(avgWorkMinutes)}
+                      {hourlyRate > 0 ? `¥${estimatedSalary.toLocaleString()}` : "-"}
                     </p>
                   </div>
                 </div>
@@ -1627,8 +1644,8 @@ function AttendanceScreen() {
             </div>
           }
         >
-          <div className="space-y-4 px-5 py-4">
-            <div className="flex items-center gap-3 rounded-xl bg-[var(--status-rejected)]/10 p-4">
+          <div className="space-y-3 px-5 py-4">
+            <div className="flex items-center gap-3 rounded-lg bg-[var(--status-rejected)]/10 p-4">
               <AlertTriangle className="h-6 w-6 text-[var(--status-rejected)] shrink-0" />
               <div className="space-y-1">
                 {clockInWarningType === "no-shift" && (

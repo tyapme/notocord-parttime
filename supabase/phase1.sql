@@ -1705,3 +1705,131 @@ grant execute on function public.get_audit_logs(int, int, text, text, text) to s
 revoke all on function private.get_audit_logs(int, int, text, text, text) from public;
 revoke all on function private.get_audit_logs(int, int, text, text, text) from anon, authenticated;
 grant execute on function private.get_audit_logs(int, int, text, text, text) to service_role;
+
+-- ==== Hourly Rates Table ====
+-- 時給設定テーブル: 「〜月分（20日締め）までは〇〇円」という形式
+-- effective_until は月の20日を想定（例: 2026-03-20 → 2026年3月分まで）
+create table if not exists public.hourly_rates (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  hourly_rate integer not null check (hourly_rate > 0),
+  effective_until date not null, -- この日まで有効（通常は20日締め）
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists hourly_rates_user_id_idx on public.hourly_rates(user_id);
+create unique index if not exists hourly_rates_user_effective_idx on public.hourly_rates(user_id, effective_until);
+
+-- 特定の日付に適用される時給を取得
+create or replace function public.get_hourly_rate_for_date(p_user_id uuid, p_date date)
+returns integer
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select hourly_rate
+  from public.hourly_rates
+  where user_id = p_user_id
+    and effective_until >= p_date
+  order by effective_until
+  limit 1;
+$$;
+
+-- ユーザーの時給履歴を取得
+create or replace function public.get_hourly_rates(p_user_id uuid)
+returns table (
+  id uuid,
+  user_id uuid,
+  hourly_rate integer,
+  effective_until date,
+  created_at timestamptz
+)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select id, user_id, hourly_rate, effective_until, created_at
+  from public.hourly_rates r
+  where r.user_id = p_user_id
+  order by effective_until desc;
+$$;
+
+-- 時給を設定（UPSERT）
+create or replace function public.set_hourly_rate(
+  p_user_id uuid,
+  p_hourly_rate integer,
+  p_effective_until date
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_role text;
+  v_result_id uuid;
+begin
+  select role into v_role from public.profiles where id = auth.uid() and active = true;
+  if v_role not in ('admin', 'reviewer') then
+    raise exception 'Not authorized';
+  end if;
+  
+  insert into public.hourly_rates (user_id, hourly_rate, effective_until)
+  values (p_user_id, p_hourly_rate, p_effective_until)
+  on conflict (user_id, effective_until) do update
+    set hourly_rate = excluded.hourly_rate,
+        updated_at = now()
+  returning id into v_result_id;
+  
+  return v_result_id;
+end;
+$$;
+
+-- 時給設定を削除
+create or replace function public.delete_hourly_rate(p_rate_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_role text;
+begin
+  select role into v_role from public.profiles where id = auth.uid() and active = true;
+  if v_role not in ('admin', 'reviewer') then
+    raise exception 'Not authorized';
+  end if;
+  
+  delete from public.hourly_rates where id = p_rate_id;
+end;
+$$;
+
+-- RLS for hourly_rates
+alter table public.hourly_rates enable row level security;
+
+drop policy if exists "Reviewers and admins can manage hourly_rates" on public.hourly_rates;
+create policy "Reviewers and admins can manage hourly_rates"
+  on public.hourly_rates
+  for all
+  using (private.current_user_role() in ('admin', 'reviewer'))
+  with check (private.current_user_role() in ('admin', 'reviewer'));
+
+drop policy if exists "Users can view own hourly_rates" on public.hourly_rates;
+create policy "Users can view own hourly_rates"
+  on public.hourly_rates
+  for select
+  using (user_id = auth.uid());
+
+-- Grant permissions
+grant select, insert, update, delete on public.hourly_rates to authenticated;
+revoke all on function public.get_hourly_rate_for_date(uuid, date) from public, anon;
+grant execute on function public.get_hourly_rate_for_date(uuid, date) to authenticated, service_role;
+revoke all on function public.get_hourly_rates(uuid) from public, anon;
+grant execute on function public.get_hourly_rates(uuid) to authenticated, service_role;
+revoke all on function public.set_hourly_rate(uuid, integer, date) from public, anon;
+grant execute on function public.set_hourly_rate(uuid, integer, date) to authenticated, service_role;
+revoke all on function public.delete_hourly_rate(uuid) from public, anon;
+grant execute on function public.delete_hourly_rate(uuid) to authenticated, service_role;

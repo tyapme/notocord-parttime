@@ -81,3 +81,11 @@ export interface RequestHistoryEntry {
   details: Record<string, unknown> | null;
   createdAt: string;
 }
+
+export interface HourlyRate {
+  id: string;
+  userId: string;
+  hourlyRate: number;
+  effectiveUntil: string; // YYYY-MM-DD (typically the 20th of a month)
+  createdAt: string;
+}
