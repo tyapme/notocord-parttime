@@ -45,7 +45,6 @@ import {
   getBreakMinutesDb,
   getWorkMinutesDb,
   saveCurrentTasks as saveCurrentTasksDb,
-  saveSessionTasks as saveSessionTasksDb,
 } from "@/lib/attendance-db";
 import { supabase } from "@/lib/supabase/client";
 import { formatJstDateLabel, formatJstDateTime, formatJstTime, formatJstTimeWithSeconds } from "@/lib/datetime";
@@ -268,7 +267,6 @@ function AttendanceScreen() {
   const [taskSaveStatus, setTaskSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const lastSyncedTasksRef = useRef<string>(""); // Realtime同期用: 前回同期したタスクのJSON
   const [taskInputValue, setTaskInputValue] = useState(""); // タスク入力欄の値
-  const [listTaskInputBySessionId, setListTaskInputBySessionId] = useState<Record<string, string>>({}); // 一覧タブ用タスク入力
 
   const [editSessionId, setEditSessionId] = useState<string | null>(null);
   const [editStartAt, setEditStartAt] = useState("");
@@ -943,6 +941,54 @@ function AttendanceScreen() {
             </div>
           </div>
 
+          {/* 期間統計サマリー */}
+          {(() => {
+            const targetSessions = role === "staff" ? myPeriodSessions : managedSessions;
+            const totalWorkMinutes = targetSessions.reduce((sum, s) => sum + getWorkMinutesDb(s), 0);
+            const totalBreakMinutes = targetSessions.reduce((sum, s) => sum + getBreakMinutesDb(s), 0);
+            const workDays = targetSessions.filter(s => s.end_at !== null).length;
+            const avgWorkMinutes = workDays > 0 ? Math.round(totalWorkMinutes / workDays) : 0;
+            const totalHours = Math.floor(totalWorkMinutes / 60);
+            const totalMins = totalWorkMinutes % 60;
+
+            return (
+              <div className="rounded-2xl bg-[var(--primary-container)] p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-semibold text-[var(--primary)]">期間サマリー</span>
+                  <span className="text-xs text-[var(--primary)]/70">
+                    {currentPeriod.startAt.split("T")[0].replace(/-/g, "/")} 〜 {currentPeriod.endAt.split("T")[0].replace(/-/g, "/")}
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="rounded-xl bg-[var(--surface-container-lowest)] p-3 text-center">
+                    <p className="text-[10px] text-[var(--on-surface-variant)] mb-1">総労働</p>
+                    <p className="text-lg font-bold tabular-nums text-[var(--primary)]">
+                      {totalHours}<span className="text-xs font-medium">h</span>{totalMins > 0 && <>{totalMins}<span className="text-xs font-medium">m</span></>}
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-[var(--surface-container-lowest)] p-3 text-center">
+                    <p className="text-[10px] text-[var(--on-surface-variant)] mb-1">出勤日数</p>
+                    <p className="text-lg font-bold tabular-nums text-foreground">
+                      {workDays}<span className="text-xs font-medium">日</span>
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-[var(--surface-container-lowest)] p-3 text-center">
+                    <p className="text-[10px] text-[var(--on-surface-variant)] mb-1">平均/日</p>
+                    <p className="text-lg font-bold tabular-nums text-foreground">
+                      {formatDurationMinutes(avgWorkMinutes)}
+                    </p>
+                  </div>
+                </div>
+                {totalBreakMinutes > 0 && (
+                  <div className="mt-2 flex items-center justify-center gap-1.5 text-xs text-[var(--primary)]/70">
+                    <Coffee className="h-3 w-3" />
+                    <span>総休憩: {formatDurationMinutes(totalBreakMinutes)}</span>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           {/* セッション一覧 */}
           <div className="space-y-3">
             {(role === "staff" ? myPeriodSessions : managedSessions).length === 0 && (
@@ -959,7 +1005,6 @@ function AttendanceScreen() {
               const workMinutes = getWorkMinutesDb(session);
               const ownerName = nameByUserId.get(session.user_id) ?? "不明";
               const isOpen = session.end_at === null;
-              const sessionTaskInput = listTaskInputBySessionId[session.id] ?? "";
 
               return (
                 <div key={session.id} className="rounded-2xl bg-[var(--surface-container)] overflow-hidden">
@@ -1018,124 +1063,8 @@ function AttendanceScreen() {
                     </div>
                   </div>
 
-                  {/* タスク部分 */}
-                  {(role === "staff" && session.user_id === currentUser.id) ? (
-                    <div className="border-t border-[var(--outline-variant)]/50 px-4 py-3 space-y-2">
-                      <p className="text-xs font-medium text-[var(--on-surface-variant)]">やったこと</p>
-                      {/* チップ表示 */}
-                      {session.tasks.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5">
-                          {session.tasks.map((task, idx) => (
-                            <span
-                              key={`${session.id}-chip-${idx}`}
-                              className="inline-flex items-center gap-1 rounded-full bg-[var(--primary)]/10 px-2.5 py-1 text-xs text-foreground"
-                            >
-                              {task}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const newTasks = [...session.tasks];
-                                  newTasks.splice(idx, 1);
-                                  // 即保存
-                                  if (session.end_at === null && session.user_id === currentUser.id) {
-                                    saveCurrentTasksDb(newTasks).then((result) => {
-                                      if (!result.ok) {
-                                        toast({ description: result.error ?? "削除に失敗しました", variant: "destructive" });
-                                      }
-                                    });
-                                  } else {
-                                    saveSessionTasksDb(session.id, newTasks).then((result) => {
-                                      if (!result.ok) {
-                                        toast({ description: result.error ?? "削除に失敗しました", variant: "destructive" });
-                                      }
-                                    });
-                                  }
-                                  refreshData();
-                                }}
-                                className="rounded-full p-0.5 hover:bg-[var(--primary)]/20 transition-colors"
-                                title="削除"
-                              >
-                                <svg className="h-3 w-3 text-[var(--on-surface-variant)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                  <path d="M18 6L6 18M6 6l12 12" />
-                                </svg>
-                              </button>
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      {session.tasks.length === 0 && (
-                        <p className="text-xs text-[var(--on-surface-variant)]/60">まだ登録されていません</p>
-                      )}
-                      {/* 入力欄 */}
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          placeholder="追加..."
-                          value={sessionTaskInput}
-                          onChange={(e) => setListTaskInputBySessionId((prev) => ({ ...prev, [session.id]: e.target.value }))}
-                          className="flex-1 min-w-0 rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-3 py-2 text-sm text-foreground placeholder:text-[var(--on-surface-variant)]/50 focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
-                          onKeyDown={(e) => {
-                            if (e.nativeEvent.isComposing) return;
-                            if (e.key === "Enter" && sessionTaskInput.trim()) {
-                              e.preventDefault();
-                              const newTasks = [...session.tasks, sessionTaskInput.trim()];
-                              setListTaskInputBySessionId((prev) => ({ ...prev, [session.id]: "" }));
-                              // 即保存
-                              if (session.end_at === null && session.user_id === currentUser.id) {
-                                saveCurrentTasksDb(newTasks).then((result) => {
-                                  if (result.ok) {
-                                    toast({ description: "追加しました" });
-                                  } else {
-                                    toast({ description: result.error ?? "追加に失敗しました", variant: "destructive" });
-                                  }
-                                });
-                              } else {
-                                saveSessionTasksDb(session.id, newTasks).then((result) => {
-                                  if (result.ok) {
-                                    toast({ description: "追加しました" });
-                                  } else {
-                                    toast({ description: result.error ?? "追加に失敗しました", variant: "destructive" });
-                                  }
-                                });
-                              }
-                              refreshData();
-                            }
-                          }}
-                        />
-                        <button
-                          type="button"
-                          disabled={!sessionTaskInput.trim()}
-                          onClick={() => {
-                            if (!sessionTaskInput.trim()) return;
-                            const newTasks = [...session.tasks, sessionTaskInput.trim()];
-                            setListTaskInputBySessionId((prev) => ({ ...prev, [session.id]: "" }));
-                            // 即保存
-                            if (session.end_at === null && session.user_id === currentUser.id) {
-                              saveCurrentTasksDb(newTasks).then((result) => {
-                                if (result.ok) {
-                                  toast({ description: "追加しました" });
-                                } else {
-                                  toast({ description: result.error ?? "追加に失敗しました", variant: "destructive" });
-                                }
-                              });
-                            } else {
-                              saveSessionTasksDb(session.id, newTasks).then((result) => {
-                                if (result.ok) {
-                                  toast({ description: "追加しました" });
-                                } else {
-                                  toast({ description: result.error ?? "追加に失敗しました", variant: "destructive" });
-                                }
-                              });
-                            }
-                            refreshData();
-                          }}
-                          className="shrink-0 rounded-lg bg-[var(--primary)] px-3 py-2 text-sm font-medium text-[var(--primary-foreground)] transition-colors hover:bg-[var(--primary)]/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          追加
-                        </button>
-                      </div>
-                    </div>
-                  ) : session.tasks.length > 0 && (
+                  {/* タスク部分（読み取り専用） */}
+                  {session.tasks.length > 0 && (
                     <div className="border-t border-[var(--outline-variant)]/50 px-4 py-3">
                       <p className="text-xs font-medium text-[var(--on-surface-variant)] mb-2">やったこと</p>
                       <div className="flex flex-wrap gap-1.5">
