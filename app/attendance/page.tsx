@@ -271,6 +271,7 @@ function AttendanceScreen() {
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastSyncedTasksRef = useRef<string>(""); // Realtime同期用: 前回同期したタスクのJSON
   const [taskDraftBySessionId, setTaskDraftBySessionId] = useState<Record<string, string>>({});
+  const [taskInputValue, setTaskInputValue] = useState(""); // タスク入力欄の値
 
   const [editSessionId, setEditSessionId] = useState<string | null>(null);
   const [editStartAt, setEditStartAt] = useState("");
@@ -783,20 +784,52 @@ function AttendanceScreen() {
                 </div>
               )}
 
-              {/* 1行入力 */}
-              <input
-                type="text"
-                placeholder="タスクを入力してEnter"
-                className="w-full rounded-xl border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-4 py-2.5 text-sm text-foreground placeholder:text-[var(--on-surface-variant)]/50 focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && e.currentTarget.value.trim()) {
-                    e.preventDefault();
-                    const newTask = e.currentTarget.value.trim();
+              {/* 1行入力 + 送信ボタン */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="タスクを入力"
+                  value={taskInputValue}
+                  onChange={(e) => setTaskInputValue(e.target.value)}
+                  className="flex-1 rounded-xl border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-4 py-2.5 text-sm text-foreground placeholder:text-[var(--on-surface-variant)]/50 focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+                  onKeyDown={(e) => {
+                    // IME変換中は無視
+                    if (e.nativeEvent.isComposing) return;
+                    if (e.key === "Enter" && taskInputValue.trim()) {
+                      e.preventDefault();
+                      const newTask = taskInputValue.trim();
+                      const tasks = parseTaskLines(homeTaskDraft);
+                      tasks.push(newTask);
+                      const newValue = formatTaskLines(tasks);
+                      setHomeTaskDraft(newValue);
+                      setTaskInputValue("");
+
+                      // 即保存
+                      setTaskSaveStatus("saving");
+                      saveCurrentTasksDb(tasks).then((result) => {
+                        if (result.ok) {
+                          lastSyncedTasksRef.current = JSON.stringify(tasks);
+                          setTaskSaveStatus("saved");
+                          setTimeout(() => setTaskSaveStatus("idle"), 3000);
+                        } else {
+                          toast({ description: result.error ?? "保存に失敗しました", variant: "destructive" });
+                          setTaskSaveStatus("idle");
+                        }
+                      });
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  disabled={!taskInputValue.trim()}
+                  onClick={() => {
+                    if (!taskInputValue.trim()) return;
+                    const newTask = taskInputValue.trim();
                     const tasks = parseTaskLines(homeTaskDraft);
                     tasks.push(newTask);
                     const newValue = formatTaskLines(tasks);
                     setHomeTaskDraft(newValue);
-                    e.currentTarget.value = "";
+                    setTaskInputValue("");
 
                     // 即保存
                     setTaskSaveStatus("saving");
@@ -810,9 +843,12 @@ function AttendanceScreen() {
                         setTaskSaveStatus("idle");
                       }
                     });
-                  }
-                }}
-              />
+                  }}
+                  className="rounded-xl bg-[var(--primary)] px-4 py-2.5 text-sm font-semibold text-[var(--primary-foreground)] transition-colors hover:bg-[var(--primary)]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  追加
+                </button>
+              </div>
             </div>
           )}
 
