@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "勤務申請",
-    short_name: "勤務申請",
-    description: "勤務時間申請・承認管理システム",
+    name: "notocord",
+    short_name: "notocord",
+    description: "notocord",
     start_url: "/",
     scope: "/",
     display: "standalone",

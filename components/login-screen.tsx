@@ -36,13 +36,8 @@ export function LoginScreen() {
 
         {/* Brand */}
         <div className="mb-8">
-          <div className="h-10 w-10 rounded-[var(--ds-radius-md)] bg-primary flex items-center justify-center mb-5">
-            <svg className="h-5 w-5 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">ログイン</h1>
-          <p className="mt-1 text-sm text-muted-foreground">勤務申請システム</p>
+          <p className="text-lg font-semibold tracking-tight text-foreground">notocord</p>
+          <h1 className="mt-3 text-2xl font-semibold tracking-tight text-foreground">ログイン</h1>
         </div>
 
         {/* Form */}

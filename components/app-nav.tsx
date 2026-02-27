@@ -115,8 +115,7 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
       <header className="surface-glass sticky top-0 z-40 w-full">
         <div className="mx-auto flex h-[var(--header-height)] max-w-[var(--ds-layout-max-content-width)] items-center justify-between gap-3 px-[var(--ds-layout-page-gutter)]">
           <div className="shrink-0">
-            <p className="text-[15px] font-medium tracking-[-0.01em] text-foreground select-none">シフト管理</p>
-            <p className="text-[11px] leading-none text-[var(--on-surface-variant)] select-none mt-0.5">申請・承認</p>
+            <p className="text-[15px] font-medium tracking-[-0.01em] text-foreground select-none">notocord</p>
           </div>
 
           <nav className="hidden md:flex h-11 items-center gap-1 overflow-x-auto no-scrollbar" aria-label="メインナビゲーション">

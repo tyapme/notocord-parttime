@@ -14,13 +14,13 @@ const zenKakuGothicNew = Zen_Kaku_Gothic_New({
 const _geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
 
 export const metadata: Metadata = {
-  title: '勤務申請',
-  description: '勤務時間申請・承認管理システム',
+  title: 'notocord',
+  description: 'notocord',
   generator: 'v0.app',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
-    title: '勤務申請',
+    title: 'notocord',
     statusBarStyle: 'default',
   },
   icons: {
