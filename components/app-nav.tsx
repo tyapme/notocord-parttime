@@ -119,22 +119,25 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
             <p className="text-[11px] leading-none text-[var(--on-surface-variant)] select-none mt-0.5">申請・承認</p>
           </div>
 
-          <nav className="hidden md:flex items-center gap-1 overflow-x-auto no-scrollbar rounded-full bg-[var(--surface-container-low)] p-1" aria-label="メインナビゲーション">
+          <nav className="hidden md:flex h-11 items-center gap-1 overflow-x-auto no-scrollbar" aria-label="メインナビゲーション">
             {topNavItems.map((item) => (
               <button
                 key={item}
                 onClick={() => handleTopNavClick(item)}
                 className={cn(
-                  "tap-target relative rounded-full border border-transparent px-4 py-1.5 text-sm whitespace-nowrap transition-[background-color,color,box-shadow]",
+                  "tap-target relative inline-flex h-10 items-center px-3.5 text-sm whitespace-nowrap transition-colors",
                   activeTopNav === item
-                    ? "bg-[var(--secondary-container)] text-[var(--on-secondary-container)] font-medium shadow-[0_1px_2px_rgba(14,18,27,.1)]"
-                    : "text-[var(--on-surface-variant)] hover:text-foreground hover:bg-[color-mix(in_oklab,var(--surface-container-high)_92%,white_8%)]"
+                    ? "text-[var(--primary)] font-medium"
+                    : "text-[var(--on-surface-variant)] hover:text-foreground"
                 )}
               >
                 {topLabel(item)}
+                {activeTopNav === item && (
+                  <span className="absolute inset-x-2 -bottom-[1px] h-0.5 rounded-full bg-[var(--primary)]" aria-hidden />
+                )}
                 {item === "shift" && currentUser.role !== "staff" && pendingCount > 0 && (
                   <span
-                    className="absolute -top-1 -right-1 h-5 w-5 rounded-full text-[10px] font-bold flex items-center justify-center shadow-[0_4px_12px_rgba(20,35,72,.35)]"
+                    className="absolute -top-0.5 -right-1 h-5 w-5 rounded-full text-[10px] font-bold flex items-center justify-center shadow-[0_4px_12px_rgba(20,35,72,.35)]"
                     style={{
                       background: "color-mix(in oklab, var(--primary) 78%, black 22%)",
                       color: "var(--primary-foreground)",
@@ -205,15 +208,18 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
                   key={tab.id}
                   onClick={() => onTabChange(tab.id)}
                   className={cn(
-                    "relative rounded-full px-3.5 py-1 text-xs font-medium whitespace-nowrap transition-colors",
+                    "relative inline-flex h-9 items-center px-3.5 text-xs font-medium whitespace-nowrap transition-colors",
                     activeTab === tab.id
-                      ? "bg-[var(--primary-container)] text-[var(--on-primary-container)]"
-                      : "text-[var(--on-surface-variant)] hover:text-foreground hover:bg-[var(--surface-container-low)]"
+                      ? "text-[var(--primary)]"
+                      : "text-[var(--on-surface-variant)] hover:text-foreground"
                   )}
                 >
                   {tab.label}
                   {tab.id === "review" && pendingCount > 0 && (
                     <span className="ml-1.5 text-[10px] font-bold text-[var(--status-pending)]">({pendingCount})</span>
+                  )}
+                  {activeTab === tab.id && (
+                    <span className="absolute inset-x-2 -bottom-[1px] h-0.5 rounded-full bg-[var(--primary)]" aria-hidden />
                   )}
                 </button>
               ))}
