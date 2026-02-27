@@ -3,6 +3,7 @@
 import { Status } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/status-badge";
+import { useIsMobile } from "@/components/ui/use-mobile";
 import { XIcon } from "lucide-react";
 
 function FrameContent({
@@ -65,6 +66,35 @@ export function ShiftRequestModalFrame({
   maxWidthClassName?: string;
   bodyClassName?: string;
 }) {
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <div
+        className="fixed inset-0 z-50 bg-foreground/20"
+        onClick={onClose}
+      >
+        <div
+          className="absolute inset-x-0 bottom-0 flex max-h-[90dvh] w-full flex-col"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <FrameContent
+            onClose={onClose}
+            header={header}
+            status={status}
+            footer={footer}
+            maxWidthClassName={cn(
+              "max-w-none rounded-t-[22px] rounded-b-none border border-b-0 border-[var(--outline-variant)] bg-[var(--surface-container-high)] shadow-[var(--ds-elevation-overlay)]"
+            )}
+            bodyClassName={bodyClassName}
+          >
+            {children}
+          </FrameContent>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="fixed inset-0 z-50 bg-foreground/15 backdrop-blur-sm"
