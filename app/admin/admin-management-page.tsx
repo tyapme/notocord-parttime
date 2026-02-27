@@ -33,7 +33,8 @@ export function AdminScreen() {
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    addUser({ name: newName.trim(), email: newEmail.trim(), role: newRole, requestType: newRequestType }).then((ok) => {
+    const requestType = newRole === "staff" ? newRequestType : "fix";
+    addUser({ name: newName.trim(), email: newEmail.trim(), role: newRole, requestType }).then((ok) => {
       if (!ok) {
         setError("作成に失敗しました");
         return;
@@ -47,7 +48,8 @@ export function AdminScreen() {
     e.preventDefault();
     if (!editing) return;
     setError(null);
-    updateUser(editing.id, { name: editing.name, email: editing.email, role: editing.role, requestType: editing.requestType }).then((ok) => {
+    const requestType = editing.role === "staff" ? editing.requestType : "fix";
+    updateUser(editing.id, { name: editing.name, email: editing.email, role: editing.role, requestType }).then((ok) => {
       if (!ok) {
         setError("更新に失敗しました");
         return;
@@ -93,12 +95,14 @@ export function AdminScreen() {
                 )}>
                   {ROLE_LABELS[u.role].toUpperCase()}
                 </span>
-                <span className={cn(
-                  "text-[10px] font-bold rounded-md px-1.5 py-0.5 tracking-wide",
-                  u.requestType === "flex" ? "bg-accent/40 text-accent-foreground" : "bg-muted text-muted-foreground"
-                )}>
-                  {u.requestType === "flex" ? "FLEX" : "FIX"}
-                </span>
+                {u.role === "staff" && (
+                  <span className={cn(
+                    "text-[10px] font-bold rounded-md px-1.5 py-0.5 tracking-wide",
+                    u.requestType === "flex" ? "bg-accent/40 text-accent-foreground" : "bg-muted text-muted-foreground"
+                  )}>
+                    {u.requestType === "flex" ? "FLEX" : "FIX"}
+                  </span>
+                )}
                 {!u.active && (
                   <span className="text-[10px] font-bold rounded-md px-1.5 py-0.5 bg-[var(--status-rejected-bg)] text-[var(--status-rejected)] tracking-wide">
                     無効
@@ -147,7 +151,11 @@ export function AdminScreen() {
                 label=""
                 className="space-y-0"
                 value={newRole}
-                onChange={(v) => setNewRole(v as Role)}
+                onChange={(v) => {
+                  const nextRole = v as Role;
+                  setNewRole(nextRole);
+                  if (nextRole !== "staff") setNewRequestType("fix");
+                }}
                 options={[
                   { value: "staff", label: "アルバイト" },
                   { value: "reviewer", label: "レビュアー" },
@@ -155,18 +163,20 @@ export function AdminScreen() {
                 ]}
               />
             </Field>
-            <Field label="申請タイプ">
-              <SelectField
-                label=""
-                className="space-y-0"
-                value={newRequestType}
-                onChange={(v) => setNewRequestType(v as "fix" | "flex")}
-                options={[
-                  { value: "fix", label: "Fix" },
-                  { value: "flex", label: "Flex" },
-                ]}
-              />
-            </Field>
+            {newRole === "staff" && (
+              <Field label="申請タイプ">
+                <SelectField
+                  label=""
+                  className="space-y-0"
+                  value={newRequestType}
+                  onChange={(v) => setNewRequestType(v as "fix" | "flex")}
+                  options={[
+                    { value: "fix", label: "Fix" },
+                    { value: "flex", label: "Flex" },
+                  ]}
+                />
+              </Field>
+            )}
             {error && <p className="text-xs font-medium text-[var(--status-rejected)]">{error}</p>}
             <div className="pt-1">
               <button type="submit" className="button-primary w-full text-sm">追加</button>
@@ -190,7 +200,14 @@ export function AdminScreen() {
                 label=""
                 className="space-y-0"
                 value={editing.role}
-                onChange={(v) => setEditing({ ...editing, role: v as Role })}
+                onChange={(v) => {
+                  const nextRole = v as Role;
+                  setEditing({
+                    ...editing,
+                    role: nextRole,
+                    requestType: nextRole === "staff" ? editing.requestType : "fix",
+                  });
+                }}
                 options={[
                   { value: "staff", label: "アルバイト" },
                   { value: "reviewer", label: "レビュアー" },
@@ -198,18 +215,20 @@ export function AdminScreen() {
                 ]}
               />
             </Field>
-            <Field label="申請タイプ">
-              <SelectField
-                label=""
-                className="space-y-0"
-                value={editing.requestType}
-                onChange={(v) => setEditing({ ...editing, requestType: v as "fix" | "flex" })}
-                options={[
-                  { value: "fix", label: "Fix" },
-                  { value: "flex", label: "Flex" },
-                ]}
-              />
-            </Field>
+            {editing.role === "staff" && (
+              <Field label="申請タイプ">
+                <SelectField
+                  label=""
+                  className="space-y-0"
+                  value={editing.requestType}
+                  onChange={(v) => setEditing({ ...editing, requestType: v as "fix" | "flex" })}
+                  options={[
+                    { value: "fix", label: "Fix" },
+                    { value: "flex", label: "Flex" },
+                  ]}
+                />
+              </Field>
+            )}
             {error && <p className="text-xs font-medium text-[var(--status-rejected)]">{error}</p>}
             <div className="pt-1">
               <button type="submit" className="button-primary w-full text-sm">保存</button>

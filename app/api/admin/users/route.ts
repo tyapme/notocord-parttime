@@ -42,7 +42,7 @@ export async function POST(req: Request) {
   if (!["admin", "reviewer", "staff"].includes(role)) {
     return NextResponse.json({ error: "ロールが不正です" }, { status: 400 });
   }
-  if (!["fix", "flex"].includes(requestType)) {
+  if (role === "staff" && !["fix", "flex"].includes(requestType)) {
     return NextResponse.json({ error: "申請タイプが不正です" }, { status: 400 });
   }
   if (!name || !email) {
@@ -70,7 +70,7 @@ export async function POST(req: Request) {
     name,
     role,
     active: true,
-    request_type: requestType,
+    request_type: role === "staff" ? requestType : "fix",
   });
   if (profileError) {
     return NextResponse.json({ error: profileError.message }, { status: 400 });
@@ -88,16 +88,29 @@ export async function PATCH(req: Request) {
   if (!id) return NextResponse.json({ error: "idが必要です" }, { status: 400 });
 
   const updates: Record<string, any> = {};
+  const admin = gate.admin;
+  const { data: profileBefore, error: beforeError } = await admin
+    .from("profiles")
+    .select("role")
+    .eq("id", id)
+    .single();
+  if (beforeError || !profileBefore) {
+    return NextResponse.json({ error: "対象ユーザーが見つかりません" }, { status: 404 });
+  }
+
+  let nextRole = profileBefore.role as string;
   if (body?.name !== undefined) updates.name = String(body.name).trim();
   if (body?.email !== undefined) updates.email = String(body.email).trim().toLowerCase();
   if (body?.role !== undefined) {
-    const nextRole = String(body.role);
+    nextRole = String(body.role);
     if (!["admin", "reviewer", "staff"].includes(nextRole)) {
       return NextResponse.json({ error: "ロールが不正です" }, { status: 400 });
     }
     updates.role = nextRole;
   }
-  if (body?.requestType !== undefined) {
+  if (nextRole !== "staff") {
+    updates.request_type = "fix";
+  } else if (body?.requestType !== undefined) {
     const nextType = String(body.requestType);
     if (!["fix", "flex"].includes(nextType)) {
       return NextResponse.json({ error: "申請タイプが不正です" }, { status: 400 });
@@ -105,8 +118,6 @@ export async function PATCH(req: Request) {
     updates.request_type = nextType;
   }
   if (body?.active !== undefined) updates.active = Boolean(body.active);
-
-  const admin = gate.admin;
 
   if (updates.email) {
     const { error: authUpdateError } = await admin.auth.admin.updateUserById(id, { email: updates.email });
