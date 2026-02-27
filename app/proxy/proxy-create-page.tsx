@@ -17,6 +17,8 @@ import { SelectField } from "@/components/select-field";
 export function ProxyCreateScreen() {
   const users = useAppStore((s) => s.users);
   const requests = useAppStore((s) => s.requests);
+  const fetchUsers = useAppStore((s) => s.fetchUsers);
+  const fetchRequests = useAppStore((s) => s.fetchRequests);
   const createFix = useAppStore((s) => s.proxyCreateFix);
   const createFlex = useAppStore((s) => s.proxyCreateFlex);
   const storeError = useAppStore((s) => s.error);
@@ -24,6 +26,7 @@ export function ProxyCreateScreen() {
   const [targetUserId, setTargetUserId] = useState("");
   const [note, setNote] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Fix fields
@@ -91,6 +94,10 @@ export function ProxyCreateScreen() {
   };
 
   useEffect(() => {
+    void Promise.all([fetchUsers(), fetchRequests()]);
+  }, [fetchUsers, fetchRequests]);
+
+  useEffect(() => {
     setFixDate("");
     setFlexMonday("");
     setRequestedHours("");
@@ -99,42 +106,51 @@ export function ProxyCreateScreen() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
     setError(null);
     if (!selectedStaff) {
       setError("対象アルバイトを選択してください");
       return;
     }
+    if (activeType !== "fix" && activeType !== "flex") {
+      setError("対象アルバイトの申請タイプが未設定です");
+      return;
+    }
 
+    setSubmitting(true);
     let ok = false;
     if (activeType === "fix") {
       if (!isValidYmd(fixDate)) {
         setError("日付を正しく入力してください");
+        setSubmitting(false);
         return;
       }
-      if (fixDate < minFixDate) { setError("過去の日付は申請できません"); return; }
-      if (fixDate > maxDate) { setError("申請は3ヶ月先までです"); return; }
+      if (fixDate < minFixDate) { setError("過去の日付は申請できません"); setSubmitting(false); return; }
+      if (fixDate > maxDate) { setError("申請は3ヶ月先までです"); setSubmitting(false); return; }
       const durationMinutes = diffMinutes(startTime, endTime);
-      if (durationMinutes === null) { setError("時刻を正しく入力してください"); return; }
-      if (durationMinutes <= 0) { setError("終了時刻は開始時刻より後にしてください"); return; }
-      if (durationMinutes > 8 * 60) { setError("Fixは8時間以内で申請してください"); return; }
+      if (durationMinutes === null) { setError("時刻を正しく入力してください"); setSubmitting(false); return; }
+      if (durationMinutes <= 0) { setError("終了時刻は開始時刻より後にしてください"); setSubmitting(false); return; }
+      if (durationMinutes > 8 * 60) { setError("Fixは8時間以内で申請してください"); setSubmitting(false); return; }
       const startAt = combineDateTimeToIso(fixDate, startTime);
       const endAt = combineDateTimeToIso(fixDate, endTime);
       ok = await createFix({ userId: targetUserId, startAt, endAt, note });
     } else {
       if (!flexMonday) {
         setError("週を選択してください");
+        setSubmitting(false);
         return;
       }
-      if (flexMonday < minFlexWeekMonday) { setError("過去週の申請はできません"); return; }
-      if (flexMonday > maxDate) { setError("申請は3ヶ月先までです"); return; }
-      if (takenFlexMondays.has(flexMonday)) { setError("その週は申請済みです"); return; }
+      if (flexMonday < minFlexWeekMonday) { setError("過去週の申請はできません"); setSubmitting(false); return; }
+      if (flexMonday > maxDate) { setError("申請は3ヶ月先までです"); setSubmitting(false); return; }
+      if (takenFlexMondays.has(flexMonday)) { setError("その週は申請済みです"); setSubmitting(false); return; }
       if (!requestedHours) {
         setError("勤務時間数を入力してください");
+        setSubmitting(false);
         return;
       }
       const hours = Number(requestedHours);
-      if (!Number.isFinite(hours) || hours <= 0) { setError("勤務時間数を正しく入力してください"); return; }
-      if (hours > 40) { setError("Flexは40時間以内で申請してください"); return; }
+      if (!Number.isFinite(hours) || hours <= 0) { setError("勤務時間数を正しく入力してください"); setSubmitting(false); return; }
+      if (hours > 40) { setError("Flexは40時間以内で申請してください"); setSubmitting(false); return; }
       ok = await createFlex({
         userId: targetUserId,
         dateInWeek: flexMonday,
@@ -151,6 +167,7 @@ export function ProxyCreateScreen() {
       const latestError = useAppStore.getState().error;
       setError(formatBackendError(latestError || storeError));
     }
+    setSubmitting(false);
   };
 
   return (
@@ -281,8 +298,9 @@ export function ProxyCreateScreen() {
           <button
             type="submit"
             className="button-primary w-full"
+            disabled={submitting}
           >
-            代理作成する
+            {submitting ? "作成中..." : "代理作成する"}
           </button>
         </form>
       )}
