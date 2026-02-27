@@ -1707,19 +1707,77 @@ revoke all on function private.get_audit_logs(int, int, text, text, text) from a
 grant execute on function private.get_audit_logs(int, int, text, text, text) to service_role;
 
 -- ==== Hourly Rates Table ====
--- 時給設定テーブル: 「〜月分（20日締め）までは〇〇円」という形式
--- effective_until は月の20日を想定（例: 2026-03-20 → 2026年3月分まで）
+-- 時給設定テーブル: 「YYYY-MM-DD から〇〇円」という形式
+-- 初回設定は日時未指定（effective_from = null）を許可
 create table if not exists public.hourly_rates (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
   hourly_rate integer not null check (hourly_rate > 0),
-  effective_until date not null, -- この日まで有効（通常は20日締め）
+  effective_from date, -- この日から有効。null は初回設定（全期間の基準値）
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
+-- 旧定義（effective_until）からの移行互換
+do $$
+declare
+  v_renamed boolean := false;
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'hourly_rates'
+      and column_name = 'effective_until'
+  ) and not exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'hourly_rates'
+      and column_name = 'effective_from'
+  ) then
+    alter table public.hourly_rates rename column effective_until to effective_from;
+    v_renamed := true;
+  end if;
+
+  -- 旧データを「〜まで」形式から「〜から」形式へ変換
+  if v_renamed then
+    with ordered as (
+      select
+        id,
+        lag(effective_from) over (
+          partition by user_id
+          order by effective_from
+        ) as prev_effective_until,
+        row_number() over (
+          partition by user_id
+          order by effective_from
+        ) as seq
+      from public.hourly_rates
+    )
+    update public.hourly_rates r
+    set effective_from = case
+      when o.seq = 1 then null
+      else o.prev_effective_until + 1
+    end
+    from ordered o
+    where r.id = o.id;
+  end if;
+end;
+$$;
+
+alter table public.hourly_rates
+  alter column effective_from drop not null;
+
 create index if not exists hourly_rates_user_id_idx on public.hourly_rates(user_id);
-create unique index if not exists hourly_rates_user_effective_idx on public.hourly_rates(user_id, effective_until);
+drop index if exists public.hourly_rates_user_effective_idx;
+drop index if exists public.hourly_rates_user_effective_from_idx;
+create unique index if not exists hourly_rates_user_effective_from_idx
+  on public.hourly_rates(user_id, effective_from);
+drop index if exists public.hourly_rates_user_null_effective_from_idx;
+create unique index if not exists hourly_rates_user_null_effective_from_idx
+  on public.hourly_rates(user_id)
+  where effective_from is null;
 
 -- 特定の日付に適用される時給を取得
 create or replace function public.get_hourly_rate_for_date(p_user_id uuid, p_date date)
@@ -1732,8 +1790,8 @@ as $$
   select hourly_rate
   from public.hourly_rates
   where user_id = p_user_id
-    and effective_until >= p_date
-  order by effective_until
+    and (effective_from is null or effective_from <= p_date)
+  order by effective_from desc nulls last
   limit 1;
 $$;
 
@@ -1743,7 +1801,7 @@ returns table (
   id uuid,
   user_id uuid,
   hourly_rate integer,
-  effective_until date,
+  effective_from date,
   created_at timestamptz
 )
 language sql
@@ -1751,17 +1809,17 @@ stable
 security definer
 set search_path = ''
 as $$
-  select id, user_id, hourly_rate, effective_until, created_at
+  select id, user_id, hourly_rate, effective_from, created_at
   from public.hourly_rates r
   where r.user_id = p_user_id
-  order by effective_until desc;
+  order by effective_from desc nulls last;
 $$;
 
 -- 時給を設定（UPSERT）
 create or replace function public.set_hourly_rate(
   p_user_id uuid,
   p_hourly_rate integer,
-  p_effective_until date
+  p_effective_from date default null
 )
 returns uuid
 language plpgsql
@@ -1776,13 +1834,28 @@ begin
   if v_role not in ('admin', 'reviewer') then
     raise exception 'Not authorized';
   end if;
-  
-  insert into public.hourly_rates (user_id, hourly_rate, effective_until)
-  values (p_user_id, p_hourly_rate, p_effective_until)
-  on conflict (user_id, effective_until) do update
-    set hourly_rate = excluded.hourly_rate,
-        updated_at = now()
-  returning id into v_result_id;
+
+  if p_effective_from is null then
+    update public.hourly_rates
+      set hourly_rate = p_hourly_rate,
+          updated_at = now()
+      where user_id = p_user_id
+        and effective_from is null
+      returning id into v_result_id;
+
+    if v_result_id is null then
+      insert into public.hourly_rates (user_id, hourly_rate, effective_from)
+      values (p_user_id, p_hourly_rate, null)
+      returning id into v_result_id;
+    end if;
+  else
+    insert into public.hourly_rates (user_id, hourly_rate, effective_from)
+    values (p_user_id, p_hourly_rate, p_effective_from)
+    on conflict (user_id, effective_from) do update
+      set hourly_rate = excluded.hourly_rate,
+          updated_at = now()
+    returning id into v_result_id;
+  end if;
   
   return v_result_id;
 end;

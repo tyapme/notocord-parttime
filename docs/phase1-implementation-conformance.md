@@ -182,6 +182,23 @@ Flex:
 - `action`: `create | proxy_create | update | withdraw | review | reopen`
 - `details jsonb` に差分・理由・メッセージを保存
 
+## 4.5 `public.hourly_rates`
+
+- reviewer/admin が staff ごとの時給を管理
+- `effective_from date`:
+  - `YYYY-MM-DD` を指定した場合は「その日から適用」
+  - `NULL` の場合は「初回設定（日時未指定の基準時給）」
+- `get_hourly_rate_for_date(user_id, date)` は
+  - `effective_from <= date` の中で最新を優先
+  - 該当がなければ `effective_from is null` をフォールバック
+- 運用メモ:
+  - 旧定義（`p_effective_until`）から更新した直後は PostgREST の schema cache が古い場合がある
+  - 反映後に RPC が見つからない場合は schema cache を再読み込みする
+- UI:
+  - `/users` の時給設定は折りたたみ表示
+  - 展開時は「時給 / 開始年(手入力) / 開始月(選択式) / 保存」の1行フォームで登録し、開始日は `YYYY-MM-21` に正規化する
+  - 同画面の申請一覧は `type/status` フィルタ付きで絞り込み表示できる
+
 ---
 
 ## 5. 状態遷移モデル
@@ -476,6 +493,7 @@ sequenceDiagram
 | 変更理由 | Fix modify必須 | 実装済み（DB制約あり） |
 | メッセージ | 全アクションで入力可 | 実装済み |
 | 代理作成 | reviewer/adminのみ、即approved | 実装済み |
+| 時給設定 | reviewer/admin が staff 別に「〜から」設定、初回は日時未指定可 | 実装済み |
 | Flex重複 | pending/approved同週重複禁止 | 実装済み |
 | 却下/取り下げ後再申請 | 同日/同週で再申請可 | 実装済み（インデックス条件により） |
 | 履歴表示 | 変更履歴トグル表示 | 実装済み |
@@ -598,4 +616,3 @@ sequenceDiagram
 - 現行実装はPhase 1運用要件を満たす
 - 中期改善ポイントは `security definer` の配置/`search_path`/middleware導入
 - 上記改善は安全性と将来保守性を上げるが、現時点で機能阻害はない
-

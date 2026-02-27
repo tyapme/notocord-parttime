@@ -86,6 +86,6 @@ export interface HourlyRate {
   id: string;
   userId: string;
   hourlyRate: number;
-  effectiveUntil: string; // YYYY-MM-DD (typically the 20th of a month)
+  effectiveFrom: string | null; // YYYY-MM-DD; null means initial baseline rate
   createdAt: string;
 }

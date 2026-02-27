@@ -53,7 +53,7 @@ import { useAppStore } from "@/lib/store";
 import type { FixRequest, FlexRequest, HourlyRate } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
-import { getHourlyRates } from "@/lib/hourly-rate";
+import { getApplicableHourlyRate, getHourlyRates } from "@/lib/hourly-rate";
 
 type PeriodOption = {
   key: string;
@@ -1363,9 +1363,9 @@ function AttendanceScreen() {
             const totalMins = totalWorkMinutes % 60;
 
             // 推定給与を計算
-            // 期間の最終日から適用される時給を取得
+            // 期間の最終日時点で有効な時給を取得
             const periodEndDate = currentPeriod.endAt.split("T")[0];
-            const applicableRate = hourlyRates.find((r) => r.effectiveUntil >= periodEndDate);
+            const applicableRate = getApplicableHourlyRate(hourlyRates, periodEndDate);
             const hourlyRate = applicableRate?.hourlyRate ?? 0;
             const estimatedSalary = Math.floor((totalWorkMinutes / 60) * hourlyRate);
 
