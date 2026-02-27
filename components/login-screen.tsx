@@ -163,22 +163,19 @@ export function LoginScreen() {
                 autoComplete="one-time-code"
                 autoFocus
                 pasteTransformer={(pasted) => pasted.replace(/\D/g, "")}
-                containerClassName="justify-center"
+                containerClassName="w-full justify-center"
               >
-                <InputOTPGroup className="gap-2">
+                <InputOTPGroup className="mx-auto grid w-full max-w-[15rem] grid-cols-4 gap-2">
                   {Array.from({ length: OTP_LENGTH }, (_, index) => (
                     <InputOTPSlot
                       key={index}
                       index={index}
                       aria-invalid={Boolean(error)}
-                      className="h-12 w-11 !rounded-xl !border !border-[var(--outline)] bg-[var(--surface-container-high)] text-lg font-semibold shadow-[0_1px_2px_rgba(14,18,27,0.08)] data-[active=true]:!border-[var(--primary)]"
+                      className="h-12 w-full !rounded-xl !border !border-[var(--outline)] bg-[var(--surface-container-high)] text-lg font-semibold shadow-[0_1px_2px_rgba(14,18,27,0.08)] data-[active=true]:!border-[var(--primary)]"
                     />
                   ))}
                 </InputOTPGroup>
               </InputOTP>
-              <p className="text-xs text-[var(--on-surface-variant)]">
-                コピー&ペースト対応。{OTP_LENGTH}桁を入力すると自動でログインします。
-              </p>
             </div>
 
             <div className="min-h-5">
