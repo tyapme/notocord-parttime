@@ -363,6 +363,7 @@ stateDiagram-v2
   - Flexは `開始日 から 終了日` の期間表示
   - FIX/FLEXタグは非表示
   - 行クリックで `StaffRequestModal` を開く
+  - 2026-02-28 修正: Fix表示時に `approvedStartAt/approvedEndAt` が null の場合は requested値へフォールバック（型安全化）
 
 ## 8.1 申請作成 `/new`
 

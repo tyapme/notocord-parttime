@@ -293,11 +293,13 @@ function HomeScreen() {
           <div className="space-y-2">
             {myRecentRequests.map((req) => {
               const displayDate = req.type === "fix"
-                ? formatJstDateLabel(
-                    req.status === "approved" && (req as FixRequest).approvedStartAt
-                      ? (req as FixRequest).approvedStartAt
-                      : (req as FixRequest).requestedStartAt
-                  )
+                ? (() => {
+                    const fixReq = req;
+                    const startAt = req.status === "approved"
+                      ? (fixReq.approvedStartAt ?? fixReq.requestedStartAt)
+                      : fixReq.requestedStartAt;
+                    return formatJstDateLabel(startAt);
+                  })()
                 : (() => {
                     const flexReq = req as FlexRequest;
                     const start = formatJstDateLabel(`${flexReq.weekStartDate}T00:00:00+09:00`);
@@ -306,7 +308,16 @@ function HomeScreen() {
                   })();
 
               const detail = req.type === "fix"
-                ? `${formatJstTime((req as FixRequest).requestedStartAt)} - ${formatJstTime((req as FixRequest).requestedEndAt)}`
+                ? (() => {
+                    const fixReq = req;
+                    const startAt = req.status === "approved"
+                      ? (fixReq.approvedStartAt ?? fixReq.requestedStartAt)
+                      : fixReq.requestedStartAt;
+                    const endAt = req.status === "approved"
+                      ? (fixReq.approvedEndAt ?? fixReq.requestedEndAt)
+                      : fixReq.requestedEndAt;
+                    return `${formatJstTime(startAt)} - ${formatJstTime(endAt)}`;
+                  })()
                 : `${(req as FlexRequest).requestedHours}時間`;
 
               return (
