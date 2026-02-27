@@ -515,7 +515,7 @@ function AttendanceScreen() {
     const now = new Date();
 
     if (userRequestType === "fix") {
-      // fix勤務: 今日のシフトを取得
+      // fix勤務: 本日のシフトを取得
       const todayFixRequest = requests.find((r): r is FixRequest =>
         r.type === "fix" &&
         r.userId === currentUserId &&
@@ -817,7 +817,7 @@ function AttendanceScreen() {
                         {!todayFixRequest && (
                           <div className="flex items-center gap-2 rounded-md bg-[var(--status-rejected)]/10 px-3 py-2">
                             <AlertTriangle className="h-4 w-4 text-[var(--status-rejected)]" />
-                            <span className="text-sm text-[var(--status-rejected)]">今日の確定済みシフトがありません</span>
+                            <span className="text-sm text-[var(--status-rejected)]">本日の確定済みシフトがありません</span>
                           </div>
                         )}
 
@@ -1634,7 +1634,7 @@ function AttendanceScreen() {
                 {clockInWarningType === "no-shift" && (
                   <>
                     <p className="text-sm font-semibold text-foreground">
-                      {userRequestType === "fix" ? "今日の確定済みシフトがありません" : "今週の確定済みシフトがありません"}
+                      {userRequestType === "fix" ? "本日の確定済みシフトがありません" : "今週の確定済みシフトがありません"}
                     </p>
                     <p className="text-xs text-[var(--on-surface-variant)]">
                       シフト申請が承認されていない状態で出勤しようとしています。
