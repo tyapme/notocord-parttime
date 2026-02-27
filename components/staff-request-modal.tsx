@@ -252,7 +252,7 @@ export function StaffRequestModal({
             <>
               <button
                 onClick={() => setEditMode(true)}
-                className="button-secondary w-full text-sm"
+                className="button-primary w-full text-sm"
               >
                 編集する
               </button>
@@ -271,7 +271,7 @@ export function StaffRequestModal({
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => setEditMode(true)}
-                className="button-secondary text-sm"
+                className="button-primary text-sm"
               >
                 変更して再申請
               </button>
