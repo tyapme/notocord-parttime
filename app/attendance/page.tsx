@@ -135,7 +135,7 @@ function formatElapsedTime(totalSeconds: number): string {
 function calculateWorkingSeconds(session: AttendanceSessionDb, now: Date): number {
   const startTime = new Date(session.start_at).getTime();
   const endTime = session.end_at ? new Date(session.end_at).getTime() : now.getTime();
-  
+
   // 休憩時間を計算
   let breakMs = 0;
   for (const brk of session.breaks) {
@@ -143,7 +143,7 @@ function calculateWorkingSeconds(session: AttendanceSessionDb, now: Date): numbe
     const breakEnd = brk.end_at ? new Date(brk.end_at).getTime() : now.getTime();
     breakMs += breakEnd - breakStart;
   }
-  
+
   const workingMs = endTime - startTime - breakMs;
   return Math.max(0, Math.floor(workingMs / 1000));
 }
@@ -159,7 +159,7 @@ type TimelineEvent = {
 /** セッションからタイムラインイベントを生成 */
 function buildTimelineEvents(session: AttendanceSessionDb): TimelineEvent[] {
   const events: TimelineEvent[] = [];
-  
+
   events.push({
     id: `start-${session.id}`,
     type: "work_start",
@@ -268,6 +268,7 @@ function AttendanceScreen() {
   const [homeTaskDraft, setHomeTaskDraft] = useState("");
   const [taskSaveStatus, setTaskSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSyncedTasksRef = useRef<string>(""); // Realtime同期用: 前回同期したタスクのJSON
   const [taskDraftBySessionId, setTaskDraftBySessionId] = useState<Record<string, string>>({});
 
   const [editSessionId, setEditSessionId] = useState<string | null>(null);
@@ -378,9 +379,23 @@ function AttendanceScreen() {
     return sessions.find((s) => s.user_id === currentUser.id && s.end_at === null) ?? null;
   }, [sessions, currentUser]);
 
+  // Realtime同期: 他デバイスからのタスク変更を検知して反映
   useEffect(() => {
-    setHomeTaskDraft(myOpenSession ? formatTaskLines(myOpenSession.tasks) : "");
-  }, [myOpenSession?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!myOpenSession) {
+      setHomeTaskDraft("");
+      lastSyncedTasksRef.current = "";
+      return;
+    }
+
+    const newTasksJson = JSON.stringify(myOpenSession.tasks);
+    const localTasksJson = JSON.stringify(parseTaskLines(homeTaskDraft));
+
+    // 初回、またはローカルが編集されていない場合（前回同期値と同じ）に更新
+    if (lastSyncedTasksRef.current === "" || localTasksJson === lastSyncedTasksRef.current) {
+      setHomeTaskDraft(formatTaskLines(myOpenSession.tasks));
+      lastSyncedTasksRef.current = newTasksJson;
+    }
+  }, [myOpenSession?.id, JSON.stringify(myOpenSession?.tasks ?? [])]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!currentUser) return null;
 
@@ -682,7 +697,7 @@ function AttendanceScreen() {
                   <span className="text-xs text-[var(--status-approved)]">✓</span>
                 )}
               </div>
-              
+
               {/* 入力済みタスクをチップで表示 */}
               {homeTaskDraft && parseTaskLines(homeTaskDraft).length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-3">
@@ -702,6 +717,7 @@ function AttendanceScreen() {
                           setTaskSaveStatus("saving");
                           saveCurrentTasksDb(tasks).then((result) => {
                             if (result.ok) {
+                              lastSyncedTasksRef.current = JSON.stringify(tasks);
                               setTaskSaveStatus("saved");
                               setTimeout(() => setTaskSaveStatus("idle"), 3000);
                             } else {
@@ -720,7 +736,7 @@ function AttendanceScreen() {
                   ))}
                 </div>
               )}
-              
+
               {/* 1行入力 */}
               <input
                 type="text"
@@ -735,11 +751,12 @@ function AttendanceScreen() {
                     const newValue = formatTaskLines(tasks);
                     setHomeTaskDraft(newValue);
                     e.currentTarget.value = "";
-                    
+
                     // 即保存
                     setTaskSaveStatus("saving");
                     saveCurrentTasksDb(tasks).then((result) => {
                       if (result.ok) {
+                        lastSyncedTasksRef.current = JSON.stringify(tasks);
                         setTaskSaveStatus("saved");
                         setTimeout(() => setTaskSaveStatus("idle"), 3000);
                       } else {
@@ -771,7 +788,7 @@ function AttendanceScreen() {
                   <div className="relative pl-4">
                     {/* タイムライン縦線 */}
                     <div className="absolute left-[7px] top-1 bottom-1 w-0.5 bg-[var(--outline-variant)]" />
-                    
+
                     <div className="space-y-2.5">
                       {buildTimelineEvents(myOpenSession).map((event) => (
                         <div key={event.id} className="relative flex items-center gap-3">
@@ -804,7 +821,7 @@ function AttendanceScreen() {
                           </div>
                         </div>
                       ))}
-                      
+
                       {/* 現在進行中インジケーター（点滅はここだけ） */}
                       {!myOpenSession.end_at && (
                         <div className="relative flex items-center gap-3">
