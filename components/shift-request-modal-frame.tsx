@@ -25,7 +25,7 @@ function FrameContent({
   return (
     <div
       className={cn(
-        "w-full overflow-hidden max-h-[92dvh] min-h-0 flex flex-col",
+        "mx-auto w-full overflow-hidden max-h-[92dvh] min-h-0 flex flex-col",
         maxWidthClassName ?? "max-w-sm"
       )}
     >
@@ -70,7 +70,10 @@ export function ShiftRequestModalFrame({
       className="fixed inset-0 z-50 bg-foreground/15 backdrop-blur-sm"
       onClick={onClose}
     >
-      <div className="grid min-h-full w-full place-items-center px-4 py-6" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="flex h-full w-full items-center justify-center overflow-y-auto px-4 py-6"
+        onClick={(e) => e.stopPropagation()}
+      >
         <FrameContent
           onClose={onClose}
           header={header}
