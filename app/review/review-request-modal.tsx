@@ -345,7 +345,7 @@ export function ReviewRequestModal({
                           className="input-base w-full min-w-0 md:text-sm"
                         />
                       </div>
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div className="grid grid-cols-2 gap-3">
                         <div className="min-w-0 space-y-1.5">
                           <label className="text-xs font-medium text-muted-foreground">開始時刻</label>
                           <input type="time" step={300} value={approvedStart} onChange={(e) => setApprovedStart(e.target.value)} className="input-base w-full min-w-0 md:text-sm" />
@@ -540,7 +540,7 @@ export function ReviewRequestModal({
                         className="input-base w-full min-w-0 md:text-sm"
                       />
                     </div>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="grid grid-cols-2 gap-3">
                       <div className="min-w-0 space-y-1.5">
                         <label className="text-xs font-medium text-muted-foreground">開始時刻</label>
                         <input type="time" step={300} value={approvedStart} onChange={(e) => setApprovedStart(e.target.value)} className="input-base w-full min-w-0 md:text-sm" />

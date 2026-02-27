@@ -163,7 +163,7 @@ export function NewRequestScreen({ onSuccess }: { onSuccess: () => void }) {
               className="max-w-[15rem]"
               inputClassName="text-base tabular-nums"
             />
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-2 gap-3">
               <div className="min-w-0 space-y-1.5">
                 <label className="text-sm font-medium text-foreground">開始時刻</label>
                 <input
