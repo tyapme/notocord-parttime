@@ -5,6 +5,7 @@ import { useAppStore } from "@/lib/store";
 import { User, Role } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { SelectField } from "@/components/select-field";
+import { ShiftRequestModalFrame } from "@/components/shift-request-modal-frame";
 
 const ROLE_LABELS: Record<Role, string> = {
   staff: "アルバイト",
@@ -247,19 +248,14 @@ export function AdminScreen() {
 
 function Modal({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-foreground/20 backdrop-blur-sm px-4">
-      <div className="modal-surface w-full max-w-sm overflow-hidden">
-        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border">
-          <p className="text-sm font-bold text-foreground">{title}</p>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        <div className="px-5 py-5">{children}</div>
-      </div>
-    </div>
+    <ShiftRequestModalFrame
+      onClose={onClose}
+      header={<p className="text-sm font-bold text-foreground">{title}</p>}
+      bodyClassName="px-5 py-5"
+      maxWidthClassName="max-w-sm"
+    >
+      {children}
+    </ShiftRequestModalFrame>
   );
 }
 
