@@ -4,8 +4,6 @@ import { Status } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/status-badge";
 import { XIcon } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { Drawer, DrawerContent } from "@/components/ui/drawer";
 
 function FrameContent({
   onClose,
@@ -67,23 +65,9 @@ export function ShiftRequestModalFrame({
   maxWidthClassName?: string;
   bodyClassName?: string;
 }) {
-  const isMobile = useIsMobile();
-
-  if (isMobile) {
-    return (
-      <Drawer open onOpenChange={(open) => !open && onClose()}>
-        <DrawerContent className="data-[vaul-drawer-direction=bottom]:max-h-[92dvh] min-h-0 overflow-hidden rounded-t-[var(--ds-component-modal-corner-radius)] rounded-b-none border-0 bg-[var(--surface-container-high)] shadow-none">
-          <FrameContent onClose={onClose} header={header} status={status} footer={footer} bodyClassName={bodyClassName} maxWidthClassName="max-w-none">
-            {children}
-          </FrameContent>
-        </DrawerContent>
-      </Drawer>
-    );
-  }
-
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/15 backdrop-blur-sm px-4"
+      className="fixed inset-0 z-50 grid place-items-center bg-foreground/15 backdrop-blur-sm px-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
