@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 import { PwaRegister } from '@/components/pwa-register'
 import { RootRouteShell } from '@/components/root-route-shell'
+import { Toaster } from '@/components/ui/toaster'
 
 const zenKakuGothicNew = Zen_Kaku_Gothic_New({
   weight: "400",
@@ -62,6 +63,7 @@ export default function RootLayout({
       <body className={`${zenKakuGothicNew.variable} ${_geistMono.variable} font-sans antialiased`}>
         <RootRouteShell>{children}</RootRouteShell>
         <PwaRegister />
+        <Toaster />
         <Analytics />
       </body>
     </html>

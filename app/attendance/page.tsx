@@ -52,6 +52,7 @@ import { supabase } from "@/lib/supabase/client";
 import { formatJstDateLabel, formatJstDateTime, formatJstTime, formatJstTimeWithSeconds } from "@/lib/datetime";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { toast } from "@/hooks/use-toast";
 
 type PeriodOption = {
   key: string;
@@ -260,8 +261,6 @@ function AttendanceScreen() {
   const [sessions, setSessions] = useState<AttendanceSessionDb[]>([]);
   const [myStatus, setMyStatus] = useState<AttendanceStatusDb>("off");
   const [loading, setLoading] = useState(true);
-  const [notice, setNotice] = useState("");
-  const [error, setError] = useState("");
   const [currentTime, setCurrentTime] = useState(new Date());
 
   const periodOptions = useMemo(() => buildPeriodOptions(), []);
@@ -485,68 +484,62 @@ function AttendanceScreen() {
   const editSession = editSessionId ? sessions.find((session) => session.id === editSessionId) ?? null : null;
 
   const handleClockIn = async () => {
-    setError("");
     const result = await clockIn();
     if (!result.ok) {
-      setError(result.error ?? "出勤に失敗しました");
+      toast({ description: result.error ?? "出勤に失敗しました", variant: "destructive" });
       return;
     }
     setMyStatus("working"); // 即座にステータス更新
-    setNotice("出勤しました");
+    toast({ description: "出勤しました" });
     await refreshData();
   };
 
   const handleBreakStart = async () => {
-    setError("");
     const result = await breakStart();
     if (!result.ok) {
-      setError(result.error ?? "休憩開始に失敗しました");
+      toast({ description: result.error ?? "休憩開始に失敗しました", variant: "destructive" });
       return;
     }
     setMyStatus("on_break"); // 即座にステータス更新
-    setNotice("休憩を開始しました");
+    toast({ description: "休憩を開始しました" });
     await refreshData();
   };
 
   const handleBreakEnd = async () => {
-    setError("");
     const result = await breakEnd();
     if (!result.ok) {
-      setError(result.error ?? "休憩終了に失敗しました");
+      toast({ description: result.error ?? "休憩終了に失敗しました", variant: "destructive" });
       return;
     }
     setMyStatus("working"); // 即座にステータス更新
-    setNotice("休憩を終了しました");
+    toast({ description: "休憩を終了しました" });
     await refreshData();
   };
 
   const handleClockOut = async () => {
-    setError("");
     const tasks = parseTaskLines(homeTaskDraft);
     const result = await clockOut(tasks);
     if (!result.ok) {
-      setError(result.error ?? "退勤に失敗しました");
+      toast({ description: result.error ?? "退勤に失敗しました", variant: "destructive" });
       return;
     }
     setMyStatus("off"); // 即座にステータス更新
-    setNotice("退勤しました");
+    toast({ description: "退勤しました" });
     await refreshData();
   };
 
   const handleSaveCurrentTasks = async () => {
-    setError("");
     const tasks = parseTaskLines(homeTaskDraft);
     const result = await saveCurrentTasksDb(tasks);
     if (!result.ok) {
-      setError(result.error ?? "保存に失敗しました");
+      toast({ description: result.error ?? "保存に失敗しました", variant: "destructive" });
       return;
     }
-    setNotice("やったことを保存しました");
+    toast({ description: "やったことを保存しました" });
     await refreshData();
   };
 
   const handleSaveSessionTasks = async (session: AttendanceSessionDb) => {
-    setError("");
     const draft = taskDraftBySessionId[session.id] ?? formatTaskLines(session.tasks);
     const tasks = parseTaskLines(draft);
 
@@ -554,17 +547,17 @@ function AttendanceScreen() {
     if (session.end_at === null && session.user_id === currentUser.id) {
       const result = await saveCurrentTasksDb(tasks);
       if (!result.ok) {
-        setError(result.error ?? "保存に失敗しました");
+        toast({ description: result.error ?? "保存に失敗しました", variant: "destructive" });
         return;
       }
     } else {
       const result = await saveSessionTasksDb(session.id, tasks);
       if (!result.ok) {
-        setError(result.error ?? "保存に失敗しました");
+        toast({ description: result.error ?? "保存に失敗しました", variant: "destructive" });
         return;
       }
     }
-    setNotice("やったことを保存しました");
+    toast({ description: "やったことを保存しました" });
     await refreshData();
   };
 
@@ -580,26 +573,26 @@ function AttendanceScreen() {
     const startAtIso = fromJstLocalInput(editStartAt);
     const endAtIso = editEndAt ? fromJstLocalInput(editEndAt) : null;
     if (!startAtIso) {
-      setError("開始時刻の形式が不正です");
+      toast({ description: "開始時刻の形式が不正です", variant: "destructive" });
       return;
     }
     if (editEndAt && !endAtIso) {
-      setError("終了時刻の形式が不正です");
+      toast({ description: "終了時刻の形式が不正です", variant: "destructive" });
       return;
     }
     if (!editMessage.trim()) {
-      setError("修正メッセージを入力してください");
+      toast({ description: "修正メッセージを入力してください", variant: "destructive" });
       return;
     }
 
     const result = await correctAttendance(editSession.id, startAtIso, endAtIso, editMessage);
     if (!result.ok) {
-      setError(result.error ?? "修正に失敗しました");
+      toast({ description: result.error ?? "修正に失敗しました", variant: "destructive" });
       return;
     }
     setEditSessionId(null);
     setEditMessage("");
-    setNotice("勤怠を修正しました");
+    toast({ description: "勤怠を修正しました" });
     await refreshData();
   };
 
@@ -616,17 +609,6 @@ function AttendanceScreen() {
       <div>
         <h1 className="page-title">勤怠</h1>
       </div>
-
-      {(notice || error) && (
-        <div
-          className={cn(
-            "rounded-xl border px-4 py-3 text-xs font-medium",
-            error ? "border-[var(--status-rejected)] text-[var(--status-rejected)]" : "border-[var(--outline-variant)] text-[var(--primary)]"
-          )}
-        >
-          {error || notice}
-        </div>
-      )}
 
       {activeTab === "home" && role === "staff" && (
         <div className="space-y-4">
@@ -785,7 +767,7 @@ function AttendanceScreen() {
                               setTaskSaveStatus("saved");
                               setTimeout(() => setTaskSaveStatus("idle"), 3000);
                             } else {
-                              setError(result.error ?? "保存に失敗しました");
+                              toast({ description: result.error ?? "保存に失敗しました", variant: "destructive" });
                               setTaskSaveStatus("idle");
                             }
                           });
@@ -824,7 +806,7 @@ function AttendanceScreen() {
                         setTaskSaveStatus("saved");
                         setTimeout(() => setTaskSaveStatus("idle"), 3000);
                       } else {
-                        setError(result.error ?? "保存に失敗しました");
+                        toast({ description: result.error ?? "保存に失敗しました", variant: "destructive" });
                         setTaskSaveStatus("idle");
                       }
                     });
@@ -1180,7 +1162,7 @@ function AttendanceScreen() {
                 onClick={async () => {
                   const tasks = parseTaskLines(homeTaskDraft);
                   if (tasks.length === 0) {
-                    setError("「やったこと」を1件以上入力してください");
+                    toast({ description: "「やったこと」を1件以上入力してください", variant: "destructive" });
                     return;
                   }
                   await handleClockOut();
