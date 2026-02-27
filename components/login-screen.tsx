@@ -6,7 +6,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/lib/store";
 
-const OTP_LENGTH = 6;
+const OTP_LENGTH = 8;
 const OTP_COOLDOWN_SECONDS = 60;
 
 export function LoginScreen() {
