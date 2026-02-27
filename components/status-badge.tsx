@@ -25,7 +25,7 @@ const STATUS_MAP: Record<Status, { label: string; className: string }> = {
 export function StatusBadge({ status }: { status: Status }) {
   const { label, className } = STATUS_MAP[status];
   return (
-    <span className={cn("inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap border border-transparent", className)}>
+    <span className={cn("inline-flex items-center rounded-[var(--ds-radius-pill)] px-2.5 py-1 text-[11px] font-medium whitespace-nowrap border border-transparent", className)}>
       {label}
     </span>
   );

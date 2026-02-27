@@ -171,7 +171,7 @@ export function LoginScreen() {
                       key={index}
                       index={index}
                       aria-invalid={Boolean(error)}
-                      className="h-11 w-full !rounded-xl !border !border-[var(--outline)] bg-[var(--surface-container-high)] text-base font-semibold shadow-[0_1px_2px_rgba(14,18,27,0.08)] data-[active=true]:!border-[var(--primary)]"
+                      className="h-11 w-full !rounded-[var(--ds-radius-md)] !border !border-[var(--outline)] bg-[var(--surface-container-high)] text-base font-semibold shadow-[var(--ds-elevation-card)] data-[active=true]:!border-[var(--primary)]"
                     />
                   ))}
                 </InputOTPGroup>

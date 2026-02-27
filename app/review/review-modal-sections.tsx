@@ -34,11 +34,11 @@ export function RadioOption({
     >
       <div
         className={cn(
-          "h-4 w-4 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors",
+          "h-4 w-4 rounded-[var(--ds-radius-pill)] border-2 shrink-0 flex items-center justify-center transition-colors",
           selected ? "border-primary" : "border-border"
         )}
       >
-        {selected && <div className="h-1.5 w-1.5 rounded-full bg-primary" />}
+        {selected && <div className="h-1.5 w-1.5 rounded-[var(--ds-radius-pill)] bg-primary" />}
       </div>
       <div className="min-w-0">
         <p className="text-sm font-semibold text-foreground">{label}</p>

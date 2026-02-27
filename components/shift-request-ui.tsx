@@ -77,8 +77,8 @@ export function TypeTag({ type }: { type: "fix" | "flex" }) {
   return (
     <span
       className={cn(
-        "text-[10px] font-semibold rounded-full px-2 py-0.5 shrink-0 tracking-wide",
-        type === "fix" ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"
+        "text-[10px] font-semibold rounded-[var(--ds-radius-pill)] px-2 py-0.5 shrink-0 tracking-wide",
+        type === "fix" ? "bg-[var(--surface-container-high)] text-muted-foreground" : "bg-[var(--primary-container)] text-[var(--on-primary-container)]"
       )}
     >
       {type === "fix" ? "FIX" : "FLEX"}
@@ -95,11 +95,11 @@ export function MetaTag({
 }) {
   const cls =
     kind === "proxy"
-      ? "bg-muted text-muted-foreground"
+      ? "bg-[var(--surface-container-high)] text-muted-foreground"
       : kind === "ok"
         ? "bg-[var(--status-approved-bg)] text-[var(--status-approved)]"
-        : "bg-amber-100 text-amber-700";
-  return <span className={cn("text-[10px] font-semibold rounded-full px-2 py-0.5 tracking-wide", cls)}>{children}</span>;
+        : "bg-[var(--status-pending-bg)] text-[var(--status-pending)]";
+  return <span className={cn("text-[10px] font-semibold rounded-[var(--ds-radius-pill)] px-2 py-0.5 tracking-wide", cls)}>{children}</span>;
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -123,7 +123,7 @@ function DecisionBadge({ type }: { type: string }) {
     reject: "却下",
   };
   return (
-    <span className="text-[11px] font-semibold rounded-full px-2 py-0.5 tracking-wide bg-secondary text-secondary-foreground border border-border/50">
+    <span className="text-[11px] font-semibold rounded-[var(--ds-radius-pill)] px-2 py-0.5 tracking-wide bg-[var(--secondary-container)] text-[var(--on-secondary-container)] border border-[var(--outline-variant)]/50">
       {map[type] ?? type}
     </span>
   );

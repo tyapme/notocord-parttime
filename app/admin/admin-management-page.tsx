@@ -78,8 +78,8 @@ export function AdminScreen() {
           <div
             key={u.id}
             className={cn(
-              "flex items-center justify-between gap-3 rounded-xl border px-4 py-4 transition-colors",
-              !u.active ? "border-border bg-muted/30 opacity-60" : "border-border bg-card"
+              "flex items-center justify-between gap-3 rounded-[var(--ds-radius-md)] border px-4 py-4 transition-colors",
+              !u.active ? "border-[var(--outline-variant)] bg-[var(--surface-container)] opacity-60" : "border-[var(--outline-variant)] bg-card"
             )}
           >
             <div className="min-w-0 flex-1">
@@ -88,23 +88,23 @@ export function AdminScreen() {
                   {u.name}
                 </p>
                 <span className={cn(
-                  "text-[10px] font-bold rounded-md px-1.5 py-0.5 tracking-wide",
-                  u.role === "admin" ? "bg-primary/10 text-primary"
-                    : u.role === "reviewer" ? "bg-foreground/8 text-foreground"
-                      : "bg-muted text-muted-foreground"
+                  "text-[10px] font-bold rounded-[var(--ds-radius-sm)] px-1.5 py-0.5 tracking-wide",
+                  u.role === "admin" ? "bg-[var(--primary-container)] text-[var(--on-primary-container)]"
+                    : u.role === "reviewer" ? "bg-[var(--secondary-container)] text-[var(--on-secondary-container)]"
+                      : "bg-[var(--surface-container-high)] text-muted-foreground"
                 )}>
                   {ROLE_LABELS[u.role].toUpperCase()}
                 </span>
                 {u.role === "staff" && (
                   <span className={cn(
-                    "text-[10px] font-bold rounded-md px-1.5 py-0.5 tracking-wide",
-                    u.requestType === "flex" ? "bg-accent/40 text-accent-foreground" : "bg-muted text-muted-foreground"
+                    "text-[10px] font-bold rounded-[var(--ds-radius-sm)] px-1.5 py-0.5 tracking-wide",
+                    u.requestType === "flex" ? "bg-accent text-accent-foreground" : "bg-[var(--surface-container-high)] text-muted-foreground"
                   )}>
                     {u.requestType === "flex" ? "FLEX" : "FIX"}
                   </span>
                 )}
                 {!u.active && (
-                  <span className="text-[10px] font-bold rounded-md px-1.5 py-0.5 bg-[var(--status-rejected-bg)] text-[var(--status-rejected)] tracking-wide">
+                  <span className="text-[10px] font-bold rounded-[var(--ds-radius-sm)] px-1.5 py-0.5 bg-[var(--status-rejected-bg)] text-[var(--status-rejected)] tracking-wide">
                     無効
                   </span>
                 )}

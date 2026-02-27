@@ -69,19 +69,19 @@ export function MyRequestsScreen({ onNewRequest }: { onNewRequest: () => void })
       </div>
 
       {globalError && (
-        <div className="mb-4 rounded-xl border border-border bg-[var(--status-rejected-bg)]/40 px-4 py-3 text-xs text-[var(--status-rejected)]">
+        <div className="mb-4 rounded-[var(--ds-radius-md)] border border-[var(--outline-variant)] bg-[var(--status-rejected-bg)]/40 px-4 py-3 text-xs text-[var(--status-rejected)]">
           取得に失敗しました: {globalError}
         </div>
       )}
 
-      <div className="flex gap-1 p-1 bg-muted/80 rounded-full mb-5 w-fit">
+      <div className="flex gap-1 p-1 bg-[var(--surface-container)] rounded-[var(--ds-radius-pill)] mb-5 w-fit">
         {(["all", "approved"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setListTab(t)}
             className={cn(
-              "rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
-              listTab === t ? "bg-card text-foreground shadow-[0_1px_2px_rgba(0,0,0,.08)]" : "text-muted-foreground hover:text-foreground"
+              "rounded-[var(--ds-radius-pill)] px-4 py-1.5 text-sm font-medium transition-colors",
+              listTab === t ? "bg-[var(--surface-container-lowest)] text-foreground shadow-[var(--ds-elevation-card)]" : "text-muted-foreground hover:text-foreground"
             )}
           >
             {t === "all" ? "すべて" : "確定"}

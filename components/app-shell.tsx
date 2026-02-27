@@ -55,6 +55,14 @@ export function AppShell({ tab, children }: { tab: Tab; children: React.ReactNod
     init();
   }, [init]);
 
+  // URLベースでタブを同期（初回ロード時・リロード時）
+  useEffect(() => {
+    const subTab = tabToAttendanceSubTab(tab);
+    if (subTab) {
+      setActiveAttendanceTab(subTab);
+    }
+  }, [tab, setActiveAttendanceTab]);
+
   const navigate = useCallback(
     (nextTab: Tab) => {
       const subTab = tabToAttendanceSubTab(nextTab);

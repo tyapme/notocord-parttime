@@ -336,7 +336,7 @@ function AttendanceScreen() {
     void refreshData();
   }, [refreshData]);
 
-  // Supabase Realtimeで勤怠データをリアルタイム同期
+  // Supabase Realtimeで勤怠データ��リアルタイム同期
   useEffect(() => {
     if (!currentUser) return;
 
@@ -744,14 +744,14 @@ function AttendanceScreen() {
         <div className="space-y-4">
           {/* お疲れ様でした画面 */}
           {myStatus === "off" && showThankYou && (
-            <div className="rounded-2xl bg-[var(--status-approved)]/10 border border-[var(--status-approved)]/20 p-8 text-center">
+            <div className="rounded-[var(--ds-radius-lg)] bg-[var(--status-approved)]/10 border border-[var(--status-approved)]/20 p-8 text-center">
               <CheckCircle2 className="h-12 w-12 text-[var(--status-approved)] mx-auto mb-4" />
               <h2 className="text-2xl font-bold text-foreground mb-2">お疲れ様でした！</h2>
               <p className="text-sm text-[var(--on-surface-variant)] mb-6">本日の勤務が完了しました</p>
               <button
                 type="button"
                 onClick={() => setShowThankYou(false)}
-                className="rounded-xl bg-[var(--primary)] px-6 py-2.5 text-sm font-semibold text-[var(--primary-foreground)] transition-all hover:bg-[var(--primary)]/90"
+                className="rounded-[var(--ds-radius-pill)] bg-[var(--primary)] px-6 py-2.5 text-sm font-bold text-[var(--primary-foreground)] transition-all hover:bg-[var(--primary)]/90 shadow-[0_2px_8px_rgba(50,93,168,0.25)]"
               >
                 閉じる
               </button>
@@ -823,10 +823,10 @@ function AttendanceScreen() {
                   // 勤務中の場合はプログレスバー付きで表示
                   if (myStatus !== "off") {
                     return (
-                      <div className="rounded-lg bg-[var(--surface-container)] p-4 space-y-3">
+                      <div className="rounded-[var(--ds-radius-sm)] bg-[var(--surface-container)] p-4 space-y-3">
                         {/* シフト未確定で勤務中の場合の警告 */}
                         {!todayFixRequest && (
-                          <div className="flex items-center gap-2 rounded-md bg-[var(--status-rejected)]/10 px-3 py-2">
+                          <div className="flex items-center gap-2 rounded-[var(--ds-radius-sm)] bg-[var(--status-rejected)]/10 px-3 py-2">
                             <AlertTriangle className="h-4 w-4 text-[var(--status-rejected)]" />
                             <span className="text-sm text-[var(--status-rejected)]">本日の確定済みシフトがありません</span>
                           </div>
@@ -834,7 +834,7 @@ function AttendanceScreen() {
 
                         {/* 時間外出勤の注意 */}
                         {todayFixRequest && isOutsideSchedule && (
-                          <div className="flex items-center gap-2 rounded-md bg-[var(--status-pending)]/10 px-3 py-2">
+                          <div className="flex items-center gap-2 rounded-[var(--ds-radius-sm)] bg-[var(--status-pending)]/10 px-3 py-2">
                             <AlertTriangle className="h-4 w-4 text-[var(--status-pending)]" />
                             <span className="text-sm text-[var(--status-pending)]">シフト時間外に出勤しています</span>
                           </div>
@@ -842,7 +842,7 @@ function AttendanceScreen() {
 
                         {/* 130%超過警告 */}
                         {todayFixRequest && progressPercent > 130 && (
-                          <div className="flex items-center gap-2 rounded-md bg-[var(--status-rejected)]/10 px-3 py-2">
+                          <div className="flex items-center gap-2 rounded-[var(--ds-radius-sm)] bg-[var(--status-rejected)]/10 px-3 py-2">
                             <AlertTriangle className="h-4 w-4 text-[var(--status-rejected)]" />
                             <span className="text-sm text-[var(--status-rejected)]">勤務時間が大幅に超過しています</span>
                           </div>
@@ -861,9 +861,9 @@ function AttendanceScreen() {
                         </div>
 
                         {/* プログレスバー */}
-                        <div className="h-2 rounded-full bg-[var(--surface-container-high)] overflow-hidden">
+                        <div className="h-2 rounded-[var(--ds-radius-pill)] bg-[var(--surface-container-high)] overflow-hidden">
                           <div
-                            className={cn("h-full rounded-full transition-all", getProgressColor())}
+                            className={cn("h-full rounded-[var(--ds-radius-pill)] transition-all", getProgressColor())}
                             style={{ width: todayFixRequest ? `${Math.min(progressPercent, 100)}%` : "100%" }}
                           />
                         </div>
@@ -874,7 +874,7 @@ function AttendanceScreen() {
                   // 勤務していない場合は予定のみ表示
                   if (todayFixRequest) {
                     return (
-                      <div className="rounded-lg bg-[var(--surface-container)] p-4">
+                      <div className="rounded-[var(--ds-radius-sm)] bg-[var(--surface-container)] p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-[var(--primary)]" />
@@ -889,7 +889,7 @@ function AttendanceScreen() {
                   }
                   // 今日の勤務予定がない場合
                   return (
-                    <div className="rounded-lg bg-[var(--surface-container)] p-4">
+                    <div className="rounded-[var(--ds-radius-sm)] bg-[var(--surface-container)] p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-[var(--on-surface-variant)]" />
@@ -961,10 +961,10 @@ function AttendanceScreen() {
                   };
 
                   return (
-                    <div className="rounded-lg bg-[var(--surface-container)] p-4 space-y-3">
+                    <div className="rounded-[var(--ds-radius-sm)] bg-[var(--surface-container)] p-4 space-y-3">
                       {/* 未確定警告 */}
                       {!thisWeekFlexRequest && (
-                        <div className="flex items-center gap-2 rounded-md bg-[var(--status-rejected)]/10 px-3 py-2">
+                        <div className="flex items-center gap-2 rounded-[var(--ds-radius-sm)] bg-[var(--status-rejected)]/10 px-3 py-2">
                           <AlertTriangle className="h-4 w-4 text-[var(--status-rejected)]" />
                           <span className="text-sm text-[var(--status-rejected)]">今週のシフトが未確定です</span>
                         </div>
@@ -972,7 +972,7 @@ function AttendanceScreen() {
 
                       {/* 130%超過警告 */}
                       {thisWeekFlexRequest && progressPercent > 130 && (
-                        <div className="flex items-center gap-2 rounded-md bg-[var(--status-rejected)]/10 px-3 py-2">
+                        <div className="flex items-center gap-2 rounded-[var(--ds-radius-sm)] bg-[var(--status-rejected)]/10 px-3 py-2">
                           <AlertTriangle className="h-4 w-4 text-[var(--status-rejected)]" />
                           <span className="text-sm text-[var(--status-rejected)]">勤務時間が大幅に超過しています</span>
                         </div>
@@ -991,9 +991,9 @@ function AttendanceScreen() {
                       </div>
 
                       {/* プログレスバー */}
-                      <div className="h-2 rounded-full bg-[var(--surface-container-high)] overflow-hidden">
+                      <div className="h-2 rounded-[var(--ds-radius-pill)] bg-[var(--surface-container-high)] overflow-hidden">
                         <div
-                          className={cn("h-full rounded-full transition-all", getProgressColor())}
+                          className={cn("h-full rounded-[var(--ds-radius-pill)] transition-all", getProgressColor())}
                           style={{ width: thisWeekFlexRequest ? `${Math.min(progressPercent, 100)}%` : "100%" }}
                         />
                       </div>
@@ -1002,7 +1002,7 @@ function AttendanceScreen() {
                 }
               })()}
 
-              <div className="rounded-2xl bg-[var(--primary-container)] p-6">
+              <div className="rounded-[var(--ds-radius-lg)] bg-[var(--primary-container)] p-6">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-sm text-[var(--primary)]">{formatCurrentDateJst(currentTime)}</p>
@@ -1024,7 +1024,7 @@ function AttendanceScreen() {
               {/* ステータスカード */}
               <div
                 className={cn(
-                  "rounded-lg px-4 py-3",
+                  "rounded-[var(--ds-radius-sm)] px-4 py-3",
                   myStatus === "working" && "bg-[var(--status-approved)]/10 border border-[var(--status-approved)]/20",
                   myStatus === "on_break" && "bg-[var(--primary)]/10 border border-[var(--primary)]/20",
                   myStatus === "off" && "bg-[var(--surface-container)]"
@@ -1034,7 +1034,7 @@ function AttendanceScreen() {
                   <div className="flex items-center gap-2">
                     <div
                       className={cn(
-                        "flex h-9 w-9 items-center justify-center rounded-lg",
+                        "flex h-9 w-9 items-center justify-center rounded-[var(--ds-radius-sm)]",
                         myStatus === "working" && "bg-[var(--status-approved)]/20",
                         myStatus === "on_break" && "bg-[var(--primary)]/20",
                         myStatus === "off" && "bg-[var(--surface-container-high)]"
@@ -1058,7 +1058,7 @@ function AttendanceScreen() {
                 </div>
 
                 {isClosingDay && (
-                  <div className="mt-3 flex items-center gap-2 rounded-md bg-[var(--status-pending)]/10 px-2.5 py-1.5">
+                  <div className="mt-3 flex items-center gap-2 rounded-[var(--ds-radius-sm)] bg-[var(--status-pending)]/10 px-2.5 py-1.5">
                     <AlertTriangle className="h-3.5 w-3.5 text-[var(--status-pending)] shrink-0" />
                     <span className="text-[11px] text-[var(--status-pending)]">
                       締め日のため日跨ぎ勤務不可
@@ -1080,10 +1080,10 @@ function AttendanceScreen() {
                 <button
                   type="button"
                   onClick={handleClockInWithCheck}
-                  className="group flex items-center justify-center gap-2 rounded-xl bg-[var(--primary)] py-3 px-4 text-[var(--primary-foreground)] transition-all hover:bg-[var(--primary)]/90 active:scale-[0.98]"
+                  className="group flex items-center justify-center gap-2 rounded-[var(--ds-radius-pill)] bg-[var(--primary)] py-4 px-6 text-[var(--primary-foreground)] transition-all hover:bg-[var(--primary)]/90 active:scale-[0.98] shadow-[0_4px_14px_rgba(50,93,168,0.3)]"
                 >
                   <Play className="h-5 w-5" />
-                  <span className="text-sm font-semibold">出勤する</span>
+                  <span className="text-base font-bold">出勤する</span>
                 </button>
               )}
 
@@ -1093,19 +1093,19 @@ function AttendanceScreen() {
                   <button
                     type="button"
                     onClick={handleBreakStart}
-                    className="group flex items-center justify-center gap-2 rounded-xl border border-[var(--primary)]/30 bg-[var(--primary)]/10 py-3 px-4 text-foreground transition-all hover:bg-[var(--primary)]/15 active:scale-[0.98]"
+                    className="group flex items-center justify-center gap-2 rounded-[var(--ds-radius-pill)] border-2 border-[var(--primary)]/40 bg-[var(--primary)]/10 py-3.5 px-5 text-foreground transition-all hover:bg-[var(--primary)]/20 hover:border-[var(--primary)]/60 active:scale-[0.98]"
                   >
                     <Coffee className="h-5 w-5 text-[var(--primary)]" />
-                    <span className="text-sm font-semibold">休憩</span>
+                    <span className="text-sm font-bold text-[var(--primary)]">休憩</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setShowClockOutConfirm(true)}
-                    className="group flex items-center justify-center gap-2 rounded-xl border border-[var(--outline-variant)] bg-[var(--surface-container)] py-3 px-4 text-foreground transition-all hover:bg-[var(--surface-container-high)] active:scale-[0.98]"
+                    className="group flex items-center justify-center gap-2 rounded-[var(--ds-radius-pill)] border-2 border-[var(--outline-variant)] bg-[var(--surface-container)] py-3.5 px-5 text-foreground transition-all hover:bg-[var(--surface-container-high)] hover:border-[var(--on-surface-variant)]/40 active:scale-[0.98]"
                   >
-                    <LogOut className="h-5 w-5" />
-                    <span className="text-sm font-semibold">退勤</span>
+                    <LogOut className="h-5 w-5 text-[var(--on-surface-variant)]" />
+                    <span className="text-sm font-bold">退勤</span>
                   </button>
                 </>
               )}
@@ -1115,10 +1115,10 @@ function AttendanceScreen() {
                 <button
                   type="button"
                   onClick={handleBreakEnd}
-                  className="group col-span-2 flex items-center justify-center gap-2 rounded-xl bg-[var(--primary)] py-3 px-4 text-[var(--primary-foreground)] transition-all hover:bg-[var(--primary)]/90 active:scale-[0.98]"
+                  className="group col-span-2 flex items-center justify-center gap-2 rounded-[var(--ds-radius-pill)] bg-[var(--primary)] py-4 px-6 text-[var(--primary-foreground)] transition-all hover:bg-[var(--primary)]/90 active:scale-[0.98] shadow-[0_4px_14px_rgba(50,93,168,0.3)]"
                 >
                   <Play className="h-5 w-5" />
-                  <span className="text-sm font-semibold">休憩終了</span>
+                  <span className="text-base font-bold">休憩終了</span>
                 </button>
               )}
             </div>
@@ -1126,7 +1126,7 @@ function AttendanceScreen() {
 
           {/* タスク入力 */}
           {myStatus !== "off" && (
-            <div className="rounded-2xl bg-[var(--surface-container)] p-4">
+            <div className="rounded-[var(--ds-radius-lg)] bg-[var(--surface-container)] p-4">
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-sm font-semibold text-foreground">やったこと</span>
                 {taskSaveStatus === "saving" && (
@@ -1143,7 +1143,7 @@ function AttendanceScreen() {
                   {parseTaskLines(homeTaskDraft).map((task, idx) => (
                     <span
                       key={idx}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-[var(--primary)]/10 px-3 py-1.5 text-sm text-foreground"
+                      className="inline-flex items-center gap-1.5 rounded-[var(--ds-radius-pill)] bg-[var(--primary)]/10 px-3 py-1.5 text-sm text-foreground"
                     >
                       {task}
                       <button
@@ -1165,7 +1165,7 @@ function AttendanceScreen() {
                             }
                           });
                         }}
-                        className="ml-0.5 rounded-full p-0.5 hover:bg-[var(--primary)]/20 transition-colors"
+                        className="ml-0.5 rounded-[var(--ds-radius-pill)] p-0.5 hover:bg-[var(--primary)]/20 transition-colors"
                         title="削除"
                       >
                         <svg className="h-3.5 w-3.5 text-[var(--on-surface-variant)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1184,7 +1184,7 @@ function AttendanceScreen() {
                   placeholder="やったことを入力"
                   value={taskInputValue}
                   onChange={(e) => setTaskInputValue(e.target.value)}
-                  className="flex-1 min-w-0 rounded-xl border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-4 py-2.5 text-sm text-foreground placeholder:text-[var(--on-surface-variant)]/50 focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+                  className="flex-1 min-w-0 rounded-[var(--ds-radius-md)] border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-4 py-2.5 text-sm text-foreground placeholder:text-[var(--on-surface-variant)]/50 focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
                   onKeyDown={(e) => {
                     // IME変換中は無視
                     if (e.nativeEvent.isComposing) return;
@@ -1237,7 +1237,7 @@ function AttendanceScreen() {
                       }
                     });
                   }}
-                  className="shrink-0 rounded-xl bg-[var(--primary)] px-4 py-2.5 text-sm font-semibold text-[var(--primary-foreground)] transition-colors hover:bg-[var(--primary)]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="shrink-0 rounded-[var(--ds-radius-pill)] bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-[var(--primary-foreground)] transition-all hover:bg-[var(--primary)]/90 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_2px_6px_rgba(50,93,168,0.2)]"
                 >
                   追加
                 </button>
@@ -1248,7 +1248,7 @@ function AttendanceScreen() {
           {/* タイムライン（勤務中のみ表示・アコーディオン） */}
           {myStatus !== "off" && myOpenSession && (
             <Collapsible defaultOpen={false}>
-              <CollapsibleTrigger className="flex w-full items-center justify-between rounded-xl bg-[var(--surface-container)] px-4 py-3 text-left transition-colors hover:bg-[var(--surface-container-high)] group">
+              <CollapsibleTrigger className="flex w-full items-center justify-between rounded-[var(--ds-radius-md)] bg-[var(--surface-container)] px-4 py-3 text-left transition-colors hover:bg-[var(--surface-container-high)] group">
                 <div className="flex items-center gap-2">
                   <Timer className="h-4 w-4 text-[var(--primary)]" />
                   <span className="text-sm font-medium text-foreground">タイムライン</span>
@@ -1259,7 +1259,7 @@ function AttendanceScreen() {
                 <ChevronDown className="h-4 w-4 text-[var(--on-surface-variant)] transition-transform group-data-[state=open]:rotate-180" />
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="mt-2 rounded-xl bg-[var(--surface-container)] px-4 py-3">
+                <div className="mt-2 rounded-[var(--ds-radius-md)] bg-[var(--surface-container)] px-4 py-3">
                   <div className="relative pl-4">
                     {/* タイムライン縦線 */}
                     <div className="absolute left-[7px] top-1 bottom-1 w-0.5 bg-[var(--outline-variant)]" />
@@ -1270,7 +1270,7 @@ function AttendanceScreen() {
                           {/* ドット */}
                           <div
                             className={cn(
-                              "absolute -left-4 flex h-4 w-4 items-center justify-center rounded-full border-2 bg-[var(--surface-container)]",
+                              "absolute -left-4 flex h-4 w-4 items-center justify-center rounded-[var(--ds-radius-pill)] border-2 bg-[var(--surface-container)]",
                               event.type === "work_start" && "border-[var(--status-approved)]",
                               event.type === "work_end" && "border-[var(--on-surface-variant)]",
                               event.type === "break_start" && "border-[var(--primary)]",
@@ -1279,7 +1279,7 @@ function AttendanceScreen() {
                           >
                             <div
                               className={cn(
-                                "h-2 w-2 rounded-full",
+                                "h-2 w-2 rounded-[var(--ds-radius-pill)]",
                                 event.type === "work_start" && "bg-[var(--status-approved)]",
                                 event.type === "work_end" && "bg-[var(--on-surface-variant)]",
                                 event.type === "break_start" && "bg-[var(--primary)]",
@@ -1302,7 +1302,7 @@ function AttendanceScreen() {
                         <div className="relative flex items-center gap-3">
                           <div className="absolute -left-4 flex h-4 w-4 items-center justify-center bg-[var(--surface-container)]">
                             <div className={cn(
-                              "h-3 w-3 rounded-full animate-pulse",
+                              "h-3 w-3 rounded-[var(--ds-radius-pill)] animate-pulse",
                               myStatus === "working" ? "bg-[var(--status-approved)]" : "bg-[var(--primary)]"
                             )} />
                           </div>
@@ -1331,8 +1331,8 @@ function AttendanceScreen() {
       {activeTab === "list" && (
         <div className="space-y-4">
           {/* 期間選択 */}
-          <div className="flex items-center gap-3 rounded-2xl bg-[var(--surface-container)] p-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--primary)]/10">
+          <div className="flex items-center gap-3 rounded-[var(--ds-radius-lg)] bg-[var(--surface-container)] p-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-[var(--ds-radius-md)] bg-[var(--primary)]/10">
               <Calendar className="h-5 w-5 text-[var(--primary)]" />
             </div>
             <div className="flex-1">
@@ -1370,7 +1370,7 @@ function AttendanceScreen() {
             const estimatedSalary = Math.floor((totalWorkMinutes / 60) * hourlyRate);
 
             return (
-              <div className="rounded-2xl bg-[var(--primary-container)] p-4">
+              <div className="rounded-[var(--ds-radius-lg)] bg-[var(--primary-container)] p-4">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm font-semibold text-[var(--primary)]">期間サマリー</span>
                   <span className="text-xs text-[var(--primary)]/70">
@@ -1378,19 +1378,19 @@ function AttendanceScreen() {
                   </span>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
-                  <div className="rounded-xl bg-[var(--surface-container-lowest)] p-3 text-center">
+                  <div className="rounded-[var(--ds-radius-md)] bg-[var(--surface-container-lowest)] p-3 text-center">
                     <p className="text-[10px] text-[var(--on-surface-variant)] mb-1">総労働</p>
                     <p className="text-lg font-bold tabular-nums text-[var(--primary)]">
                       {totalHours}<span className="text-xs font-medium">h</span>{totalMins > 0 && <>{totalMins}<span className="text-xs font-medium">m</span></>}
                     </p>
                   </div>
-                  <div className="rounded-xl bg-[var(--surface-container-lowest)] p-3 text-center">
+                  <div className="rounded-[var(--ds-radius-md)] bg-[var(--surface-container-lowest)] p-3 text-center">
                     <p className="text-[10px] text-[var(--on-surface-variant)] mb-1">出勤日数</p>
                     <p className="text-lg font-bold tabular-nums text-foreground">
                       {workDays}<span className="text-xs font-medium">日</span>
                     </p>
                   </div>
-                  <div className="rounded-xl bg-[var(--surface-container-lowest)] p-3 text-center">
+                  <div className="rounded-[var(--ds-radius-md)] bg-[var(--surface-container-lowest)] p-3 text-center">
                     <p className="text-[10px] text-[var(--on-surface-variant)] mb-1">推定給与</p>
                     <p className="text-lg font-bold tabular-nums text-foreground">
                       {hourlyRate > 0 ? `¥${estimatedSalary.toLocaleString()}` : "-"}
@@ -1404,8 +1404,8 @@ function AttendanceScreen() {
           {/* セッション一覧 */}
           <div className="space-y-3">
             {(role === "staff" ? myPeriodSessions : managedSessions).length === 0 && (
-              <div className="flex flex-col items-center justify-center rounded-2xl bg-[var(--surface-container)] py-12 px-4">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--surface-container-high)]">
+              <div className="flex flex-col items-center justify-center rounded-[var(--ds-radius-lg)] bg-[var(--surface-container)] py-12 px-4">
+                <div className="flex h-16 w-16 items-center justify-center rounded-[var(--ds-radius-pill)] bg-[var(--surface-container-high)]">
                   <Calendar className="h-8 w-8 text-[var(--on-surface-variant)]" />
                 </div>
                 <p className="mt-4 text-sm font-medium text-[var(--on-surface-variant)]">勤務データがありません</p>
@@ -1419,14 +1419,14 @@ function AttendanceScreen() {
               const isOpen = session.end_at === null;
 
               return (
-                <div key={session.id} className="rounded-2xl bg-[var(--surface-container)] overflow-hidden">
+                <div key={session.id} className="rounded-[var(--ds-radius-lg)] bg-[var(--surface-container)] overflow-hidden">
                   {/* ヘッダー部分（日付・時間・統計） */}
                   <div className="p-4 pb-3">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
                         {/* ステータスアイコン */}
                         <div className={cn(
-                          "flex h-9 w-9 items-center justify-center rounded-xl shrink-0",
+                          "flex h-9 w-9 items-center justify-center rounded-[var(--ds-radius-md)] shrink-0",
                           isOpen ? "bg-[var(--status-approved)]/15" : "bg-[var(--surface-container-high)]"
                         )}>
                           {isOpen ? (
@@ -1483,7 +1483,7 @@ function AttendanceScreen() {
                         {session.tasks.map((task, idx) => (
                           <span
                             key={`${session.id}-task-${idx}`}
-                            className="rounded-full bg-[var(--surface-container-high)] px-2.5 py-1 text-xs text-foreground"
+                            className="rounded-[var(--ds-radius-pill)] bg-[var(--surface-container-high)] px-2.5 py-1 text-xs text-foreground"
                           >
                             {task}
                           </span>
@@ -1515,7 +1515,7 @@ function AttendanceScreen() {
       {activeTab === "manage" && canCorrect && (
         <div className="space-y-4">
           {/* フィルター */}
-          <div className="rounded-2xl bg-[var(--surface-container)] p-4 space-y-4">
+          <div className="rounded-[var(--ds-radius-lg)] bg-[var(--surface-container)] p-4 space-y-4">
             <div className="flex items-center gap-2 mb-2">
               <Users className="h-4 w-4 text-[var(--primary)]" />
               <span className="text-sm font-medium text-foreground">フィルター</span>
@@ -1527,10 +1527,10 @@ function AttendanceScreen() {
           </div>
 
           {/* 異常一覧 */}
-          <div className="rounded-2xl bg-[var(--surface-container)] p-4">
+          <div className="rounded-[var(--ds-radius-lg)] bg-[var(--surface-container)] p-4">
             <div className="flex items-center gap-2 mb-4">
               <div className={cn(
-                "flex h-8 w-8 items-center justify-center rounded-lg",
+                "flex h-8 w-8 items-center justify-center rounded-[var(--ds-radius-sm)]",
                 anomalies.length > 0 ? "bg-[var(--status-rejected)]/15" : "bg-[var(--status-approved)]/15"
               )}>
                 <AlertTriangle className={cn(
@@ -1547,7 +1547,7 @@ function AttendanceScreen() {
             </div>
 
             {anomalies.length === 0 ? (
-              <div className="flex items-center gap-3 rounded-xl bg-[var(--status-approved)]/10 px-4 py-3">
+              <div className="flex items-center gap-3 rounded-[var(--ds-radius-md)] bg-[var(--status-approved)]/10 px-4 py-3">
                 <CheckCircle2 className="h-5 w-5 text-[var(--status-approved)]" />
                 <span className="text-sm text-[var(--status-approved)]">すべて正常です</span>
               </div>
@@ -1559,7 +1559,7 @@ function AttendanceScreen() {
                   return (
                     <div
                       key={item.id}
-                      className="flex items-start gap-3 rounded-xl bg-[var(--status-rejected)]/5 border border-[var(--status-rejected)]/20 px-4 py-3"
+                      className="flex items-start gap-3 rounded-[var(--ds-radius-md)] bg-[var(--status-rejected)]/5 border border-[var(--status-rejected)]/20 px-4 py-3"
                     >
                       <AlertTriangle className="h-4 w-4 text-[var(--status-rejected)] shrink-0 mt-0.5" />
                       <div className="flex-1 min-w-0">
@@ -1630,14 +1630,14 @@ function AttendanceScreen() {
               <button
                 type="button"
                 onClick={() => setClockInWarningType(null)}
-                className="flex-1 rounded-xl bg-[var(--primary-container)] py-2.5 text-sm font-semibold text-[var(--on-secondary-container)] hover:bg-[var(--primary-container)]/80"
+                className="flex-1 rounded-[var(--ds-radius-pill)] bg-[var(--surface-container-high)] py-3 text-sm font-bold text-foreground hover:bg-[var(--surface-container-highest)]"
               >
                 キャンセル
               </button>
               <button
                 type="button"
                 onClick={handleClockIn}
-                className="flex-1 rounded-xl bg-[var(--status-rejected)] py-2.5 text-sm font-semibold text-white hover:bg-[var(--status-rejected)]/90"
+                className="flex-1 rounded-[var(--ds-radius-pill)] bg-[var(--status-rejected)] py-3 text-sm font-bold text-white hover:bg-[var(--status-rejected)]/90 shadow-[0_2px_8px_rgba(185,68,68,0.3)]"
               >
                 出勤する
               </button>
@@ -1645,7 +1645,7 @@ function AttendanceScreen() {
           }
         >
           <div className="space-y-3 px-5 py-4">
-            <div className="flex items-center gap-3 rounded-lg bg-[var(--status-rejected)]/10 p-4">
+            <div className="flex items-center gap-3 rounded-[var(--ds-radius-sm)] bg-[var(--status-rejected)]/10 p-4">
               <AlertTriangle className="h-6 w-6 text-[var(--status-rejected)] shrink-0" />
               <div className="space-y-1">
                 {clockInWarningType === "no-shift" && (
@@ -1717,10 +1717,10 @@ function AttendanceScreen() {
                 }}
                 disabled={parseTaskLines(homeTaskDraft).length === 0}
                 className={cn(
-                  "flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all",
+                  "flex-1 rounded-[var(--ds-radius-pill)] py-3 text-sm font-bold transition-all",
                   parseTaskLines(homeTaskDraft).length === 0
                     ? "bg-muted text-muted-foreground cursor-not-allowed"
-                    : "bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary)]/90"
+                    : "bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary)]/90 shadow-[0_2px_8px_rgba(50,93,168,0.25)]"
                 )}
               >
                 退勤する
@@ -1734,14 +1734,14 @@ function AttendanceScreen() {
             </p>
 
             {/* やったこと一覧 + 追加入力 */}
-            <div className="rounded-xl bg-[var(--surface-container)] p-4 space-y-3">
+            <div className="rounded-[var(--ds-radius-md)] bg-[var(--surface-container)] p-4 space-y-3">
               <p className="text-xs font-medium text-[var(--on-surface-variant)]">やったこと</p>
               {parseTaskLines(homeTaskDraft).length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {parseTaskLines(homeTaskDraft).map((task, idx) => (
                     <span
                       key={idx}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-[var(--primary)]/10 px-3 py-1.5 text-sm text-foreground"
+                      className="inline-flex items-center gap-1.5 rounded-[var(--ds-radius-pill)] bg-[var(--primary)]/10 px-3 py-1.5 text-sm text-foreground"
                     >
                       {task}
                       <button
@@ -1751,7 +1751,7 @@ function AttendanceScreen() {
                           tasks.splice(idx, 1);
                           setHomeTaskDraft(formatTaskLines(tasks));
                         }}
-                        className="ml-0.5 rounded-full p-0.5 hover:bg-[var(--primary)]/20 transition-colors"
+                        className="ml-0.5 rounded-[var(--ds-radius-pill)] p-0.5 hover:bg-[var(--primary)]/20 transition-colors"
                         title="削除"
                       >
                         <svg className="h-3.5 w-3.5 text-[var(--on-surface-variant)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1775,7 +1775,7 @@ function AttendanceScreen() {
                   placeholder="やったことを追加"
                   value={modalTaskInput}
                   onChange={(e) => setModalTaskInput(e.target.value)}
-                  className="flex-1 min-w-0 rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-3 py-2 text-sm text-foreground placeholder:text-[var(--on-surface-variant)]/50 focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+                  className="flex-1 min-w-0 rounded-[var(--ds-radius-sm)] border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-3 py-2 text-sm text-foreground placeholder:text-[var(--on-surface-variant)]/50 focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
                   onKeyDown={(e) => {
                     if (e.nativeEvent.isComposing) return;
                     if (e.key === "Enter" && modalTaskInput.trim()) {
@@ -1797,7 +1797,7 @@ function AttendanceScreen() {
                     setHomeTaskDraft(formatTaskLines(tasks));
                     setModalTaskInput("");
                   }}
-                  className="shrink-0 rounded-lg bg-[var(--primary)] px-3 py-2 text-sm font-semibold text-[var(--primary-foreground)] transition-colors hover:bg-[var(--primary)]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="shrink-0 rounded-[var(--ds-radius-pill)] bg-[var(--primary)] px-4 py-2 text-sm font-bold text-[var(--primary-foreground)] transition-all hover:bg-[var(--primary)]/90 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_2px_6px_rgba(50,93,168,0.2)]"
                 >
                   追加
                 </button>
@@ -1806,11 +1806,11 @@ function AttendanceScreen() {
 
             {myOpenSession && (
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="rounded-lg bg-[var(--surface-container)] p-3">
+                <div className="rounded-[var(--ds-radius-sm)] bg-[var(--surface-container)] p-3">
                   <p className="text-xs text-[var(--on-surface-variant)]">出勤時刻</p>
                   <p className="font-semibold tabular-nums">{formatJstTimeWithSeconds(myOpenSession.start_at)}</p>
                 </div>
-                <div className="rounded-lg bg-[var(--surface-container)] p-3">
+                <div className="rounded-[var(--ds-radius-sm)] bg-[var(--surface-container)] p-3">
                   <p className="text-xs text-[var(--on-surface-variant)]">実働時間</p>
                   <p className="font-semibold tabular-nums">{formatElapsedTime(calculateWorkingSeconds(myOpenSession, currentTime))}</p>
                 </div>

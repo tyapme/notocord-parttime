@@ -139,13 +139,13 @@
     max-width: var(--ds-layout-max-content-width);
   }
   .surface-card {
-    @apply rounded-[var(--ds-component-card-corner-radius)] border;
+    @apply rounded-lg border;
     background: var(--surface-container-low);
     border-color: var(--outline-variant);
     box-shadow: var(--ds-elevation-card);
   }
   .surface-card-subtle {
-    @apply rounded-[var(--ds-component-card-corner-radius)] border;
+    @apply rounded-lg border;
     background: var(--surface-container);
     border-color: var(--outline-variant);
     box-shadow: 0 1px 2px rgba(14, 18, 27, 0.08);
@@ -196,31 +196,38 @@
     border-top: 1px solid var(--border);
   }
   .button-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-[var(--ds-component-button-corner-radius)] px-4 text-sm text-primary-foreground;
+    @apply inline-flex items-center justify-center gap-2 rounded-[var(--ds-radius-pill)] px-5 text-sm text-primary-foreground;
     background: var(--primary);
     min-height: var(--ds-component-button-min-height);
-    font-weight: var(--ds-component-button-font-weight);
+    font-weight: 700;
     transition-duration: var(--ds-duration-fast);
-    transition-property: background-color, color, border-color, box-shadow, opacity;
+    transition-property: background-color, color, border-color, box-shadow, opacity, transform;
     border: 1px solid transparent;
-    box-shadow: 0 1px 2px rgba(14, 18, 27, 0.16);
+    box-shadow: 0 4px 14px rgba(50, 93, 168, 0.25);
   }
   .button-primary:hover {
     background: color-mix(in oklab, var(--primary) 92%, white 8%);
+    box-shadow: 0 6px 20px rgba(50, 93, 168, 0.3);
+  }
+  .button-primary:active {
+    transform: scale(0.98);
   }
   .button-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-[var(--ds-component-button-corner-radius)] border px-4 text-sm;
+    @apply inline-flex items-center justify-center gap-2 rounded-[var(--ds-radius-pill)] border px-5 text-sm;
     background: var(--primary-container);
     color: var(--on-secondary-container);
     border-color: transparent;
     min-height: var(--ds-component-button-min-height);
-    font-weight: var(--ds-component-button-font-weight);
+    font-weight: 700;
     transition-duration: var(--ds-duration-fast);
-    transition-property: background-color, color, border-color, box-shadow, opacity;
+    transition-property: background-color, color, border-color, box-shadow, opacity, transform;
     box-shadow: none;
   }
   .button-secondary:hover {
     background: color-mix(in oklab, var(--primary-container) 92%, white 8%);
+  }
+  .button-secondary:active {
+    transform: scale(0.98);
   }
   .tap-target {
     min-height: var(--tap-target);

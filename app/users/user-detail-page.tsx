@@ -21,14 +21,17 @@ import {
   Calendar,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   ClipboardList,
   Clock3,
   Play,
   Search,
   Trash2,
-  UserRound,
+  User as UserIcon,
   Wallet,
+  X,
 } from "lucide-react";
+import { AttendanceDetailModal } from "@/components/attendance-detail-modal";
 import {
   formatEffectiveFromLabel,
   getApplicableHourlyRate,
@@ -88,6 +91,9 @@ export function UsersDetailScreen() {
   const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
   const [requestStatusFilter, setRequestStatusFilter] = useState<Status | "all">("all");
   const [requestTypeFilter, setRequestTypeFilter] = useState<Request["type"] | "all">("all");
+  const [attendanceExpanded, setAttendanceExpanded] = useState(false);
+  const [requestsExpanded, setRequestsExpanded] = useState(false);
+  const [selectedAttendance, setSelectedAttendance] = useState<AttendanceSessionDb | null>(null);
   const { toast } = useToast();
 
   // 時給関連のstate
@@ -130,10 +136,12 @@ export function UsersDetailScreen() {
     void Promise.all([fetchUsers(), fetchRequests()]);
   }, [fetchUsers, fetchRequests]);
 
-  // 選択ユーザーが変わったら時給を取得
+  // 選択ユーザーが変わったら時給を取得し、展開状態をリセット
   useEffect(() => {
     if (selectedUserId) {
       void fetchHourlyRates(selectedUserId);
+      setAttendanceExpanded(false);
+      setRequestsExpanded(false);
     } else {
       setHourlyRates([]);
     }
@@ -295,24 +303,38 @@ export function UsersDetailScreen() {
         <p className="text-xs text-muted-foreground mt-0.5">アルバイトごとの申請状況を確認できます</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-[280px_minmax(0,1fr)] gap-4">
-        <aside className="surface-card p-3 h-fit">
-          <div className="relative mb-3">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+      <div className="grid grid-cols-1 md:grid-cols-[300px_minmax(0,1fr)] gap-5">
+        {/* サイドバー - ユーザーリスト */}
+        <aside className="surface-card p-4 h-fit md:sticky md:top-4 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+          <div className="relative mb-4">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="名前・メールで検索"
-              className="input-base h-9 pl-9 md:text-sm"
+              placeholder="検索..."
+              className="input-base h-10 pl-10 pr-8 text-sm"
             />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          <div className="text-xs text-muted-foreground mb-2 px-1">
+            {visibleUsers.length}名のスタッフ
           </div>
 
           {visibleUsers.length === 0 ? (
-            <div className="rounded-[var(--ds-radius-md)] border border-border bg-muted/30 px-3 py-4 text-xs text-muted-foreground">
-              対象ユーザーがいません。
+            <div className="rounded-[var(--ds-radius-md)] border border-[var(--outline-variant)] bg-[var(--surface-container)] px-4 py-6 text-sm text-muted-foreground text-center">
+              対象ユーザーがいません
             </div>
           ) : (
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               {visibleUsers.map((u) => {
                 const isActive = selectedUserId === u.id;
                 const userPendingCount = pendingCountByUserId.get(u.id) ?? 0;
@@ -320,25 +342,42 @@ export function UsersDetailScreen() {
                   <button
                     key={u.id}
                     onClick={() => setSelectedUserId(u.id)}
+                    aria-label={`${u.name} (${u.email})`}
                     className={cn(
-                      "w-full rounded-lg border px-3 py-2 text-left transition-colors",
+                      "w-full rounded-[var(--ds-radius-md)] border px-3 py-3 text-left transition-all",
                       isActive
-                        ? "border-primary/40 bg-primary/10"
-                        : "border-border hover:bg-muted/40"
+                        ? "border-[var(--primary)] bg-[var(--primary-container)]"
+                        : "border-transparent bg-[var(--surface-container)] hover:bg-[var(--surface-container-high)] hover:border-[var(--outline-variant)]"
                     )}
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-semibold text-foreground truncate">{u.name}</p>
-                      {userPendingCount > 0 && (
-                        <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
-                          未対応 {userPendingCount}
+                    <div className="flex items-start gap-3">
+                      <div className={cn(
+                        "flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--ds-radius-pill)] text-sm font-medium",
+                        isActive 
+                          ? "bg-primary text-primary-foreground" 
+                          : "bg-[var(--surface-container-high)] text-muted-foreground"
+                      )}>
+                        {u.name.charAt(0)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-end gap-2">
+                          {userPendingCount > 0 && (
+                            <span className="shrink-0 rounded-[var(--ds-radius-pill)] bg-[var(--status-pending-bg)] px-2 py-0.5 text-[10px] font-bold text-[var(--status-pending)]">
+                              {userPendingCount}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-muted-foreground truncate mt-0.5">{u.email}</p>
+                        <span className={cn(
+                          "inline-block mt-1.5 text-[10px] font-bold rounded-[var(--ds-radius-sm)] px-1.5 py-0.5",
+                          u.requestType === "flex" 
+                            ? "bg-accent text-accent-foreground" 
+                            : "bg-[var(--surface-container-high)] text-muted-foreground"
+                        )}>
+                          {u.requestType.toUpperCase()}
                         </span>
-                      )}
+                      </div>
                     </div>
-                    <p className="text-[11px] text-muted-foreground truncate">{u.email}</p>
-                    <p className="text-[11px] text-muted-foreground mt-1">
-                      {u.requestType.toUpperCase()}
-                    </p>
                   </button>
                 );
               })}
@@ -346,205 +385,245 @@ export function UsersDetailScreen() {
           )}
         </aside>
 
-        <section className="space-y-3">
+        {/* メインコンテンツ */}
+        <section className="space-y-4">
           {!selectedUser ? (
-            <div className="surface-card px-4 py-8 text-sm text-muted-foreground">
-              ユーザーを選択してください。
+            <div className="surface-card px-6 py-12 text-center">
+              <div className="flex h-14 w-14 mx-auto items-center justify-center rounded-[var(--ds-radius-pill)] bg-[var(--surface-container)] text-muted-foreground mb-4">
+                <UserIcon className="h-6 w-6" />
+              </div>
+              <p className="text-sm text-muted-foreground">ユーザーを選択してください</p>
             </div>
           ) : (
             <>
-              <div className="surface-card px-4 py-4 md:px-5">
-                <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                  <div className="flex items-start gap-3 min-w-0">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                      <UserRound className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h2 className="text-base font-bold text-foreground">{selectedUser.name}</h2>
-                        <span className="text-[11px] font-bold rounded-md px-2 py-0.5 bg-muted text-muted-foreground">
-                          {ROLE_LABELS[selectedUser.role]}
-                        </span>
-                        <span className="text-[11px] font-bold rounded-md px-2 py-0.5 bg-primary/10 text-primary">
-                          {selectedUser.requestType.toUpperCase()}
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1 truncate">{selectedUser.email}</p>
-                    </div>
+              {/* ��ーザー情報ヘッダー */}
+              <div className="surface-card px-5 py-5">
+                <div className="flex items-center gap-4 mb-5">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[var(--ds-radius-pill)] bg-primary text-primary-foreground text-xl font-semibold">
+                    {selectedUser.name.charAt(0)}
                   </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] font-bold rounded-[var(--ds-radius-sm)] px-2 py-0.5 bg-[var(--surface-container-high)] text-muted-foreground uppercase tracking-wide">
+                        {ROLE_LABELS[selectedUser.role]}
+                      </span>
+                      <span className={cn(
+                        "text-[10px] font-bold rounded-[var(--ds-radius-sm)] px-2 py-0.5 uppercase tracking-wide",
+                        selectedUser.requestType === "flex" 
+                          ? "bg-accent text-accent-foreground" 
+                          : "bg-[var(--primary-container)] text-[var(--on-primary-container)]"
+                      )}>
+                        {selectedUser.requestType}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1 truncate">{selectedUser.email}</p>
+                  </div>
+                </div>
 
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                    <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2">
-                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-700">
-                        <AlertTriangle className="h-3.5 w-3.5" />
-                        承認待ち
-                      </div>
-                      <p className="mt-1 text-lg font-bold leading-none text-amber-700">{pendingCount}件</p>
+                {/* 統計カード */}
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div className={cn(
+                    "rounded-[var(--ds-radius-md)] px-4 py-3 transition-colors",
+                    pendingCount > 0 
+                      ? "bg-[var(--status-pending-bg)] border border-[var(--status-pending)]/20" 
+                      : "bg-[var(--surface-container)] border border-transparent"
+                  )}>
+                    <div className={cn(
+                      "flex items-center gap-1.5 text-xs font-medium",
+                      pendingCount > 0 ? "text-[var(--status-pending)]" : "text-muted-foreground"
+                    )}>
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      承認待ち
                     </div>
-                    <div className="rounded-lg border border-border bg-muted/20 px-3 py-2">
-                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
-                        <Wallet className="h-3.5 w-3.5" />
-                        時給
-                      </div>
-                      <p className="mt-1 text-lg font-bold leading-none text-foreground">
-                        {currentHourlyRate > 0 ? `${currentHourlyRate.toLocaleString()}円` : "-"}
-                      </p>
+                    <p className={cn(
+                      "mt-1.5 text-2xl font-bold leading-none tabular-nums",
+                      pendingCount > 0 ? "text-[var(--status-pending)]" : "text-foreground"
+                    )}>
+                      {pendingCount}<span className="text-sm font-medium ml-0.5">件</span>
+                    </p>
+                  </div>
+                  <div className="rounded-[var(--ds-radius-md)] bg-[var(--surface-container)] px-4 py-3">
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                      <Wallet className="h-3.5 w-3.5" />
+                      時給
                     </div>
-                    <div className="rounded-lg border border-border bg-muted/20 px-3 py-2">
-                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
-                        <Calendar className="h-3.5 w-3.5" />
-                        出勤日
-                      </div>
-                      <p className="mt-1 text-lg font-bold leading-none text-foreground">{workDays}日</p>
+                    <p className="mt-1.5 text-2xl font-bold leading-none text-foreground tabular-nums">
+                      {currentHourlyRate > 0 ? (
+                        <>{currentHourlyRate.toLocaleString()}<span className="text-sm font-medium ml-0.5">円</span></>
+                      ) : "-"}
+                    </p>
+                  </div>
+                  <div className="rounded-[var(--ds-radius-md)] bg-[var(--surface-container)] px-4 py-3">
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                      <Calendar className="h-3.5 w-3.5" />
+                      出勤日
                     </div>
-                    <div className="rounded-lg border border-border bg-muted/20 px-3 py-2">
-                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
-                        <Clock3 className="h-3.5 w-3.5" />
-                        推定給与
-                      </div>
-                      <p className="mt-1 text-lg font-bold leading-none text-foreground">
-                        {currentHourlyRate > 0 ? `¥${estimatedSalary.toLocaleString()}` : "-"}
-                      </p>
+                    <p className="mt-1.5 text-2xl font-bold leading-none text-foreground tabular-nums">
+                      {workDays}<span className="text-sm font-medium ml-0.5">日</span>
+                    </p>
+                  </div>
+                  <div className="rounded-[var(--ds-radius-md)] bg-[var(--surface-container)] px-4 py-3">
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                      <Clock3 className="h-3.5 w-3.5" />
+                      推定給与
                     </div>
+                    <p className="mt-1.5 text-2xl font-bold leading-none text-foreground tabular-nums">
+                      {currentHourlyRate > 0 ? (
+                        <><span className="text-base">¥</span>{estimatedSalary.toLocaleString()}</>
+                      ) : "-"}
+                    </p>
                   </div>
                 </div>
               </div>
 
-              {/* 時給設定は利用頻度が低いため、画面占有を抑えるために折りたたみ表示にする */}
+              {/* 時給設定 */}
               <Collapsible
                 open={isRatePanelOpen}
                 onOpenChange={setIsRatePanelOpen}
-                className="surface-card px-4 py-3"
+                className="surface-card overflow-hidden"
               >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0 flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                      <Wallet className="h-4 w-4" />
+                <CollapsibleTrigger asChild>
+                  <button
+                    type="button"
+                    className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-muted/20 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-[var(--ds-radius-md)] bg-[var(--primary-container)] text-primary">
+                        <Wallet className="h-5 w-5" />
+                      </div>
+                      <div className="text-left">
+                        <h3 className="text-sm font-semibold text-foreground">時給設定</h3>
+                        <p className="text-xs text-muted-foreground">
+                          {currentHourlyRateEntry
+                            ? `現在 ${currentHourlyRateEntry.hourlyRate.toLocaleString()}円`
+                            : "未設定"}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-sm font-semibold text-foreground">時給設定</h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {currentHourlyRateEntry
-                          ? `現在: ${currentHourlyRateEntry.hourlyRate.toLocaleString()}円`
-                          : "未設定"}
-                      </p>
-                    </div>
-                  </div>
-                  <CollapsibleTrigger asChild>
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted/30"
-                    >
-                      {isRatePanelOpen ? "閉じる" : "開く"}
-                      <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", isRatePanelOpen && "rotate-180")} />
-                    </button>
-                  </CollapsibleTrigger>
-                </div>
+                    <ChevronDown className={cn(
+                      "h-5 w-5 text-muted-foreground transition-transform duration-200",
+                      isRatePanelOpen && "rotate-180"
+                    )} />
+                  </button>
+                </CollapsibleTrigger>
 
-                <CollapsibleContent className="mt-3 space-y-2">
-                  <div className="rounded-lg border border-border bg-muted/20 p-2">
-                    <div className="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_96px_80px_88px]">
-                      <input
-                        type="number"
-                        placeholder="時給（円）"
-                        value={newRateAmount}
-                        onChange={(e) => setNewRateAmount(e.target.value)}
-                        className="input-base h-9 text-sm"
-                        min={1}
-                        step={1}
-                      />
-                      <input
-                        type="number"
-                        placeholder="開始年"
-                        value={newRateYear}
-                        onChange={(e) => setNewRateYear(e.target.value)}
-                        className="input-base h-9 text-sm"
-                        min={2000}
-                        max={2100}
-                        title="開始年"
-                      />
-                      <select
-                        value={newRateMonth}
-                        onChange={(e) => setNewRateMonth(e.target.value)}
-                        className="input-base h-9 text-sm"
-                        title="開始月を選択"
-                      >
-                        <option value="">月</option>
-                        {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
-                          <option key={month} value={String(month)}>
-                            {month}月
-                          </option>
-                        ))}
-                      </select>
+                <CollapsibleContent>
+                  <div className="px-5 pb-5 space-y-4">
+                    <div className="rounded-[var(--ds-radius-md)] border border-[var(--outline-variant)] bg-[var(--surface-container)] p-4">
+                      <p className="text-xs font-medium text-muted-foreground mb-3">新しい時給を設定</p>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_100px_90px] sm:items-end">
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1.5 block">時給（円）</label>
+                          <input
+                            type="number"
+                            placeholder="1500"
+                            value={newRateAmount}
+                            onChange={(e) => setNewRateAmount(e.target.value)}
+                            className="input-base h-10 text-sm"
+                            min={1}
+                            step={1}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1.5 block">開始年</label>
+                          <input
+                            type="number"
+                            placeholder="2026"
+                            value={newRateYear}
+                            onChange={(e) => setNewRateYear(e.target.value)}
+                            className="input-base h-10 text-sm"
+                            min={2000}
+                            max={2100}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1.5 block">開始月</label>
+                          <select
+                            value={newRateMonth}
+                            onChange={(e) => setNewRateMonth(e.target.value)}
+                            className="input-base h-10 text-sm"
+                          >
+                            <option value="">選択</option>
+                            {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
+                              <option key={month} value={String(month)}>
+                                {month}月
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
                       <button
                         type="button"
                         onClick={handleSaveHourlyRate}
-                        className="button-primary h-9 px-3 text-xs"
+                        className="button-primary w-full mt-4 h-10 text-sm"
                       >
-                        保存
+                        保存する
                       </button>
                     </div>
-                  </div>
 
-                  {hourlyRatesLoading ? (
-                    <div className="text-xs text-muted-foreground">読み込み中...</div>
-                  ) : sortedHourlyRates.length === 0 ? (
-                    <div className="rounded-[var(--ds-radius-md)] border border-border bg-muted/20 px-3 py-3 text-xs text-muted-foreground text-center">
-                      履歴はまだありません
-                    </div>
-                  ) : (
-                    <div className="rounded-lg border border-border bg-card divide-y divide-border/70">
-                      {sortedHourlyRates.map((rate) => (
-                        <div
-                          key={rate.id}
-                          className="flex items-center justify-between px-3 py-2"
-                        >
-                          <div>
-                            <p className="text-sm font-semibold text-foreground">
-                              {rate.hourlyRate.toLocaleString()}円
-                            </p>
-                            <p className="text-[11px] text-muted-foreground">
-                              {rate.effectiveFrom
-                                ? `${formatEffectiveFromLabel(rate.effectiveFrom)}から`
-                                : formatEffectiveFromLabel(rate.effectiveFrom)}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              const result = await deleteHourlyRate(rate.id);
-                              if (result.ok) {
-                                toast({ description: "時給設定を削除しました" });
-                                void fetchHourlyRates(selectedUserId);
-                              } else {
-                                toast({ description: result.error, variant: "destructive" });
-                              }
-                            }}
-                            className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                            title="削除"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                    {hourlyRatesLoading ? (
+                      <div className="text-sm text-muted-foreground text-center py-4">読み込み中...</div>
+                    ) : sortedHourlyRates.length === 0 ? (
+                      <div className="rounded-[var(--ds-radius-md)] border border-dashed border-[var(--outline-variant)] bg-[var(--surface-container)] px-4 py-6 text-sm text-muted-foreground text-center">
+                        履歴はまだありません
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-2">設定履歴</p>
+                        <div className="rounded-[var(--ds-radius-md)] border border-[var(--outline-variant)] bg-card divide-y divide-[var(--outline-variant)]/50 overflow-hidden">
+                          {sortedHourlyRates.map((rate) => (
+                            <div
+                              key={rate.id}
+                              className="flex items-center justify-between px-4 py-3 hover:bg-[var(--surface-container)] transition-colors"
+                            >
+                              <div>
+                                <p className="text-sm font-bold text-foreground tabular-nums">
+                                  {rate.hourlyRate.toLocaleString()}円
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  {rate.effectiveFrom
+                                    ? `${formatEffectiveFromLabel(rate.effectiveFrom)}から適用`
+                                    : formatEffectiveFromLabel(rate.effectiveFrom)}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  const result = await deleteHourlyRate(rate.id);
+                                  if (result.ok) {
+                                    toast({ description: "時給設定を削除しました" });
+                                    void fetchHourlyRates(selectedUserId);
+                                  } else {
+                                    toast({ description: result.error, variant: "destructive" });
+                                  }
+                                }}
+                                className="p-2 rounded-[var(--ds-radius-sm)] text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                                title="削除"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  )}
+                      </div>
+                    )}
+                  </div>
                 </CollapsibleContent>
               </Collapsible>
 
               {/* 勤怠セクション */}
-              <div className="surface-card p-4">
-                <div className="mb-3 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                      <Clock3 className="h-4 w-4" />
+              <div className="surface-card p-5">
+                <div className="flex items-center justify-between gap-3 mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-[var(--ds-radius-md)] bg-[var(--primary-container)] text-primary">
+                      <Clock3 className="h-5 w-5" />
                     </div>
-                    <h3 className="text-sm font-semibold text-foreground">勤怠</h3>
+                    <h3 className="text-sm font-semibold text-foreground">勤怠記録</h3>
                   </div>
                   <select
                     value={periodKey}
                     onChange={(e) => setPeriodKey(e.target.value)}
-                    className="text-xs border border-border rounded-md px-2 py-1 bg-background"
+                    className="text-sm border border-[var(--outline-variant)] rounded-[var(--ds-radius-md)] px-3 py-2 bg-[var(--surface-container-lowest)] min-w-[160px]"
                     title="期間を選択"
                   >
                     {periodOptions.map((p) => (
@@ -554,93 +633,128 @@ export function UsersDetailScreen() {
                     ))}
                   </select>
                 </div>
-                <div className="mb-3 grid grid-cols-3 gap-2 text-center">
-                  <div className="rounded-md bg-muted/30 p-2">
-                    <div className="text-xs text-muted-foreground">勤務時間</div>
-                    <div className="text-sm font-semibold">{Math.floor(totalWorkMinutes / 60)}h{totalWorkMinutes % 60}m</div>
+
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div className="rounded-[var(--ds-radius-md)] bg-[var(--surface-container)] p-3 text-center">
+                    <div className="text-xs text-muted-foreground mb-1">勤務時間</div>
+                    <div className="text-lg font-bold tabular-nums">{Math.floor(totalWorkMinutes / 60)}h{totalWorkMinutes % 60}m</div>
                   </div>
-                  <div className="rounded-md bg-muted/30 p-2">
-                    <div className="text-xs text-muted-foreground">出勤日数</div>
-                    <div className="text-sm font-semibold">{workDays}日</div>
+                  <div className="rounded-[var(--ds-radius-md)] bg-[var(--surface-container)] p-3 text-center">
+                    <div className="text-xs text-muted-foreground mb-1">出勤日数</div>
+                    <div className="text-lg font-bold tabular-nums">{workDays}日</div>
                   </div>
-                  <div className="rounded-md bg-muted/30 p-2">
-                    <div className="text-xs text-muted-foreground">推定給与</div>
-                    <div className="text-sm font-semibold">
-                      {currentHourlyRate > 0 ? `¥${estimatedSalary.toLocaleString()}` : "時給未設定"}
+                  <div className="rounded-[var(--ds-radius-md)] bg-[var(--surface-container)] p-3 text-center">
+                    <div className="text-xs text-muted-foreground mb-1">推定給与</div>
+                    <div className="text-lg font-bold tabular-nums">
+                      {currentHourlyRate > 0 ? `¥${estimatedSalary.toLocaleString()}` : "-"}
                     </div>
                   </div>
                 </div>
+
                 {attendanceLoading ? (
-                  <div className="text-xs text-muted-foreground py-4 text-center">読み込み中...</div>
+                  <div className="text-sm text-muted-foreground py-6 text-center">読み込み中...</div>
                 ) : attendanceSessions.length === 0 ? (
-                  <div className="rounded-[var(--ds-radius-md)] border border-border bg-muted/30 px-3 py-4 text-xs text-muted-foreground">
-                    この期間の勤怠データがありません。
+                  <div className="rounded-[var(--ds-radius-md)] border border-dashed border-[var(--outline-variant)] bg-[var(--surface-container)] px-4 py-8 text-sm text-muted-foreground text-center">
+                    この期間の勤怠データがありません
                   </div>
                 ) : (
-                  <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
-                    {attendanceSessions
-                      .sort((a, b) => new Date(b.start_at).getTime() - new Date(a.start_at).getTime())
-                      .map((session) => {
-                        const clockIn = new Date(session.start_at);
-                        const clockOut = session.end_at ? new Date(session.end_at) : null;
-                        const workMin = getWorkMinutesDb(session);
-                        const breakMin = getBreakMinutesDb(session);
-                        const dateLabel = `${clockIn.getMonth() + 1}/${clockIn.getDate()}`;
-                        const timeLabel = clockOut
-                          ? `${clockIn.getHours().toString().padStart(2, "0")}:${clockIn.getMinutes().toString().padStart(2, "0")} - ${clockOut.getHours().toString().padStart(2, "0")}:${clockOut.getMinutes().toString().padStart(2, "0")}`
-                          : `${clockIn.getHours().toString().padStart(2, "0")}:${clockIn.getMinutes().toString().padStart(2, "0")} - 勤務中`;
-                        return (
-                          <div
-                            key={session.id}
-                            className="flex items-center justify-between text-xs rounded-md border border-border bg-card px-2.5 py-1.5"
-                          >
-                            <div className="flex items-center gap-2 min-w-0">
-                              <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                              <span className="font-medium shrink-0">{dateLabel}</span>
-                              <span className="text-muted-foreground truncate">{timeLabel}</span>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              {clockOut ? (
-                                <span className="flex items-center gap-1 text-emerald-600">
-                                  <CheckCircle2 className="h-3 w-3" />
-                                  {Math.floor(workMin / 60)}h{workMin % 60}m
-                                  {breakMin > 0 && (
-                                    <span className="text-muted-foreground ml-1">(休憩{breakMin}m)</span>
-                                  )}
-                                </span>
-                              ) : (
-                                <span className="flex items-center gap-1 text-blue-600">
-                                  <Play className="h-3 w-3" />
-                                  勤務中
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                  </div>
+                  <>
+                    <div className="space-y-2">
+                      {attendanceSessions
+                        .sort((a, b) => new Date(b.start_at).getTime() - new Date(a.start_at).getTime())
+                        .slice(0, attendanceExpanded ? undefined : 5)
+                        .map((session) => {
+                          const clockIn = new Date(session.start_at);
+                          const clockOut = session.end_at ? new Date(session.end_at) : null;
+                          const workMin = getWorkMinutesDb(session);
+                          const breakMin = getBreakMinutesDb(session);
+                          const dateLabel = `${clockIn.getMonth() + 1}/${clockIn.getDate()}`;
+                          const timeLabel = clockOut
+                            ? `${clockIn.getHours().toString().padStart(2, "0")}:${clockIn.getMinutes().toString().padStart(2, "0")} - ${clockOut.getHours().toString().padStart(2, "0")}:${clockOut.getMinutes().toString().padStart(2, "0")}`
+                            : `${clockIn.getHours().toString().padStart(2, "0")}:${clockIn.getMinutes().toString().padStart(2, "0")} - 勤務中`;
+                          return (
+                            <button
+                              key={session.id}
+                              type="button"
+                              onClick={() => setSelectedAttendance(session)}
+                              className="w-full flex items-center justify-between rounded-[var(--ds-radius-md)] border border-[var(--outline-variant)] bg-card px-4 py-3 text-left transition-all hover:bg-[var(--surface-container)] group"
+                            >
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--ds-radius-sm)] bg-[var(--surface-container)] text-muted-foreground group-hover:bg-[var(--surface-container-high)]">
+                                  <Calendar className="h-4 w-4" />
+                                </div>
+                                <div className="min-w-0">
+                                  <span className="text-sm font-medium">{dateLabel}</span>
+                                  <span className="text-sm text-muted-foreground ml-2">{timeLabel}</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                {clockOut ? (
+                                  <div className="flex items-center gap-1.5 text-sm">
+                                    <CheckCircle2 className="h-4 w-4 text-[var(--status-approved)]" />
+                                    <span className="font-medium tabular-nums">{Math.floor(workMin / 60)}h{workMin % 60}m</span>
+                                    {breakMin > 0 && (
+                                      <span className="text-xs text-muted-foreground">(休憩{breakMin}m)</span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-1.5 text-sm text-primary">
+                                    <Play className="h-4 w-4" />
+                                    <span className="font-medium">勤務中</span>
+                                  </div>
+                                )}
+                                <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
+                              </div>
+                            </button>
+                          );
+                        })}
+                    </div>
+                    {attendanceSessions.length > 5 && (
+                      <button
+                        type="button"
+                        onClick={() => setAttendanceExpanded(!attendanceExpanded)}
+                        className="w-full mt-3 flex items-center justify-center gap-1.5 rounded-[var(--ds-radius-md)] border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-4 py-2.5 text-xs font-medium text-muted-foreground hover:bg-[var(--surface-container)] hover:text-foreground transition-colors"
+                      >
+                        {attendanceExpanded ? (
+                          <>
+                            <ChevronUp className="h-4 w-4" />
+                            折りたたむ
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="h-4 w-4" />
+                            すべて表示（{attendanceSessions.length}件）
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
 
-              <div className="surface-card p-4">
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                      <ClipboardList className="h-4 w-4" />
+              {/* 申請一覧 */}
+              <div className="surface-card p-5">
+                <div className="flex items-center justify-between gap-3 mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-[var(--ds-radius-md)] bg-[var(--primary-container)] text-primary">
+                      <ClipboardList className="h-5 w-5" />
                     </div>
                     <div>
                       <h3 className="text-sm font-semibold text-foreground">申請一覧</h3>
-                      <p className="text-[11px] text-muted-foreground">{filteredUserRequests.length}件を表示中</p>
+                      <p className="text-xs text-muted-foreground">{filteredUserRequests.length}件を表示中</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
-                    承認待ち {requestStatusCounts.pending}件
-                  </div>
+                  {requestStatusCounts.pending > 0 && (
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-[var(--status-pending)] bg-[var(--status-pending-bg)] px-3 py-1.5 rounded-[var(--ds-radius-pill)]">
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      承認待ち {requestStatusCounts.pending}件
+                    </div>
+                  )}
                 </div>
 
-                <div className="mt-3 space-y-2">
-                  <div className="flex flex-wrap gap-1.5">
+                {/* フィルター */}
+                <div className="space-y-3 mb-4">
+                  <div className="flex flex-wrap gap-2">
                     {([
                       ["all", "すべて"],
                       ["fix", "FIX"],
@@ -651,17 +765,17 @@ export function UsersDetailScreen() {
                         type="button"
                         onClick={() => setRequestTypeFilter(value)}
                         className={cn(
-                          "rounded-md border px-2 py-1 text-xs font-medium transition-colors",
+                          "rounded-[var(--ds-radius-pill)] border px-3 py-1.5 text-xs font-medium transition-all",
                           requestTypeFilter === value
-                            ? "border-primary/40 bg-primary/10 text-primary"
-                            : "border-border text-muted-foreground hover:bg-muted/30"
+                            ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                            : "border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] text-muted-foreground hover:bg-[var(--surface-container)]"
                         )}
                       >
                         {label}
                       </button>
                     ))}
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-2">
                     {([
                       ["all", "すべて", userRequests.length],
                       ["pending", "承認待ち", requestStatusCounts.pending],
@@ -674,25 +788,26 @@ export function UsersDetailScreen() {
                         type="button"
                         onClick={() => setRequestStatusFilter(value)}
                         className={cn(
-                          "rounded-md border px-2 py-1 text-xs font-medium transition-colors",
+                          "rounded-[var(--ds-radius-pill)] border px-3 py-1.5 text-xs font-medium transition-all",
                           requestStatusFilter === value
-                            ? "border-primary/40 bg-primary/10 text-primary"
-                            : "border-border text-muted-foreground hover:bg-muted/30"
+                            ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                            : "border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] text-muted-foreground hover:bg-[var(--surface-container)]"
                         )}
                       >
-                        {label} {count}
+                        {label} <span className="tabular-nums">{count}</span>
                       </button>
                     ))}
                   </div>
                 </div>
 
                 {filteredUserRequests.length === 0 ? (
-                  <div className="mt-4 rounded-[var(--ds-radius-md)] border border-border bg-muted/30 px-3 py-6 text-xs text-center text-muted-foreground">
-                    条件に一致する申請はありません。
+                  <div className="rounded-[var(--ds-radius-md)] border border-dashed border-[var(--outline-variant)] bg-[var(--surface-container)] px-4 py-10 text-sm text-center text-muted-foreground">
+                    条件に一致する申請はありません
                   </div>
                 ) : (
-                  <div className="mt-4 space-y-2 max-h-[720px] overflow-y-auto pr-1">
-                    {filteredUserRequests.map((req) => {
+                  <>
+                  <div className="space-y-2">
+                    {filteredUserRequests.slice(0, requestsExpanded ? undefined : 5).map((req) => {
                       const approval = getApprovalSummary(req);
                       const isFlex = req.type === "flex";
                       const flexReq = isFlex ? (req as FlexRequest) : null;
@@ -710,35 +825,35 @@ export function UsersDetailScreen() {
                       const periodLabel = isFlex && flexReq
                         ? formatIsoWeekLabel(flexReq.isoYear, flexReq.isoWeek, flexReq.weekStartDate)
                         : fixStart && fixEnd
-                          ? `${formatJstDateLabel(fixStart)}${formatJstDateLabel(fixStart) !== formatJstDateLabel(fixEnd) ? ` → ${formatJstDateLabel(fixEnd)}` : ""}`
+                          ? `${formatJstDateLabel(fixStart)}${formatJstDateLabel(fixStart) !== formatJstDateLabel(fixEnd) ? ` - ${formatJstDateLabel(fixEnd)}` : ""}`
                           : "";
                       const hoursLabel = isFlex && flexReq
                         ? getFlexHoursLabel(flexReq)
                         : fixStart && fixEnd
-                          ? `${req.status === "approved" ? "確定" : "申請"} ${formatJstTime(fixStart)}–${formatJstTime(fixEnd)}`
+                          ? `${req.status === "approved" ? "確定" : "申請"} ${formatJstTime(fixStart)} - ${formatJstTime(fixEnd)}`
                           : "";
                       const TypeIcon = isFlex ? Calendar : Clock3;
                       const accentClass = req.status === "pending"
-                        ? "border-l-amber-400"
+                        ? "border-l-[var(--status-pending)]"
                         : req.status === "approved"
-                          ? "border-l-emerald-400"
+                          ? "border-l-[var(--status-approved)]"
                           : req.status === "rejected"
-                            ? "border-l-rose-400"
-                            : "border-l-slate-400";
+                            ? "border-l-[var(--status-rejected)]"
+                            : "border-l-[var(--status-withdrawn)]";
                       return (
                         <button
                           key={req.id}
                           type="button"
                           onClick={() => setSelectedRequest(req)}
                           className={cn(
-                            "w-full rounded-[var(--ds-radius-md)] border border-border border-l-4 bg-card px-3 py-3 text-left transition-colors hover:bg-muted/30 group",
+                            "w-full rounded-[var(--ds-radius-md)] border border-[var(--outline-variant)] border-l-4 bg-card px-4 py-4 text-left transition-all hover:bg-[var(--surface-container)] hover:shadow-sm group",
                             accentClass
                           )}
                         >
                           <div className="flex items-center justify-between gap-3">
                             <div className="flex items-center gap-2 flex-wrap min-w-0">
-                              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-muted/50 text-muted-foreground">
-                                <TypeIcon className="h-3.5 w-3.5" />
+                              <span className="flex h-7 w-7 items-center justify-center rounded-[var(--ds-radius-sm)] bg-[var(--surface-container)] text-muted-foreground">
+                                <TypeIcon className="h-4 w-4" />
                               </span>
                               <TypeTag type={req.type} />
                               <StatusBadge status={req.status} />
@@ -754,20 +869,42 @@ export function UsersDetailScreen() {
                               )}
                             </div>
                             <ChevronRight
-                              className="shrink-0 text-foreground/80 transition-colors group-hover:text-foreground"
-                              style={{ width: 22, height: 22 }}
-                              strokeWidth={2.8}
+                              className="shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground"
+                              style={{ width: 20, height: 20 }}
+                              strokeWidth={2}
                             />
                           </div>
-                          <p className="mt-2 text-xs text-muted-foreground">{periodLabel}</p>
-                          <p className="mt-1 text-base font-bold tabular-nums text-foreground">{hoursLabel}</p>
-                          <p className="text-[11px] text-muted-foreground mt-1.5">
-                            申請日時: {formatJstDateTime(req.createdAt)}
-                          </p>
+                          <div className="mt-3 pl-9">
+                            <p className="text-xs text-muted-foreground">{periodLabel}</p>
+                            <p className="mt-0.5 text-base font-bold tabular-nums text-foreground">{hoursLabel}</p>
+                            <p className="text-[11px] text-muted-foreground mt-2">
+                              申請日時: {formatJstDateTime(req.createdAt)}
+                            </p>
+                          </div>
                         </button>
                       );
                     })}
                   </div>
+                  {filteredUserRequests.length > 5 && (
+                    <button
+                      type="button"
+                      onClick={() => setRequestsExpanded(!requestsExpanded)}
+                      className="w-full mt-3 flex items-center justify-center gap-1.5 rounded-[var(--ds-radius-md)] border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-4 py-2.5 text-xs font-medium text-muted-foreground hover:bg-[var(--surface-container)] hover:text-foreground transition-colors"
+                    >
+                      {requestsExpanded ? (
+                        <>
+                          <ChevronUp className="h-4 w-4" />
+                          折りたたむ
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="h-4 w-4" />
+                          すべて表示（{filteredUserRequests.length}件）
+                        </>
+                      )}
+                    </button>
+                  )}
+                  </>
                 )}
               </div>
             </>
@@ -779,6 +916,14 @@ export function UsersDetailScreen() {
         <ReviewRequestModal
           request={selectedRequest}
           onClose={() => setSelectedRequest(null)}
+        />
+      )}
+
+      {selectedAttendance && (
+        <AttendanceDetailModal
+          session={selectedAttendance}
+          onClose={() => setSelectedAttendance(null)}
+          hourlyRate={currentHourlyRate}
         />
       )}
     </div>

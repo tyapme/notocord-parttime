@@ -44,7 +44,7 @@ export function ShiftRequestModalFrame({
       <Drawer open onOpenChange={(open) => !open && onClose()}>
         <DrawerContent className="max-h-[92dvh] rounded-t-[22px] border border-b-0 border-[var(--outline-variant)] bg-[var(--surface-container-high)] shadow-[var(--ds-elevation-overlay)]">
           {/* ドラッグハンドル */}
-          <div className="mx-auto mt-3 h-1 w-10 shrink-0 rounded-full bg-[var(--outline-variant)]" />
+          <div className="mx-auto mt-3 h-1 w-10 shrink-0 rounded-[var(--ds-radius-pill)] bg-[var(--outline-variant)]" />
 
           <DrawerHeader className="px-5 py-4 border-b border-border">
             <div className="flex items-center justify-between">

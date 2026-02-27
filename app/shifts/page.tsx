@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { StatusBadge } from "@/components/status-badge";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import { ICalSettingsModal } from "@/components/ical-settings-modal";
 import {
   addDays,
   formatIsoWeekLabel,
@@ -69,7 +70,7 @@ function PeriodStepButton({
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="grid h-9 w-9 place-items-center rounded-full border border-[var(--outline-variant)] bg-[var(--primary-container)] text-[var(--on-primary-container)] shadow-[0_1px_2px_rgba(20,35,72,.12)] transition-colors hover:bg-[color-mix(in_oklab,var(--primary-container)_90%,white_10%)]"
+      className="grid h-9 w-9 place-items-center rounded-[var(--ds-radius-pill)] border border-[var(--outline-variant)] bg-[var(--primary-container)] text-[var(--on-primary-container)] shadow-[0_1px_2px_rgba(20,35,72,.12)] transition-colors hover:bg-[color-mix(in_oklab,var(--primary-container)_90%,white_10%)]"
     >
       <Icon className="text-current" style={{ width: 20, height: 20 }} strokeWidth={2.6} />
     </button>
@@ -170,7 +171,7 @@ function asFixEvent(req: FixRequest, todayYmd: string, withUser: boolean): Shift
     status: req.status,
     userId: req.userId,
     userName: name,
-    shortLabel: withUser ? `${name} ${timeRange}` : `Fix ${timeRange}`,
+    shortLabel: withUser ? `${name} ${timeRange}` : timeRange,
     detailLabel: `${formatJstDateLabel(start)} ${timeRange}`,
     sortIso: start,
   };
@@ -179,7 +180,7 @@ function asFixEvent(req: FixRequest, todayYmd: string, withUser: boolean): Shift
 function asFlexEvents(req: FlexRequest, todayYmd: string, withUser: boolean): ShiftEvent[] {
   const name = req.userName ?? "不明";
   const hours = req.status === "approved" && req.approvedHours != null ? req.approvedHours : req.requestedHours;
-  const shortBase = withUser ? `${name} Flex ${hours}時間` : `Flex ${hours}時間`;
+  const shortBase = withUser ? `${name} ${hours}時間` : `${hours}時間`;
   const weekRange = formatIsoWeekLabel(req.isoYear, req.isoWeek, req.weekStartDate);
   const events: ShiftEvent[] = [];
 
@@ -214,6 +215,7 @@ function FutureShiftsScreen() {
   const [monthAnchor, setMonthAnchor] = useState(monthStart(todayYmd));
   const [selectedDate, setSelectedDate] = useState(todayYmd);
   const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
+  const [icalModalOpen, setIcalModalOpen] = useState(false);
 
   useEffect(() => {
     void fetchRequests();
@@ -388,26 +390,51 @@ function FutureShiftsScreen() {
     setSelectedDate(todayYmd);
   };
 
+  // スタッフの場合、自分のシフトタイプを判定
+  const isStaff = currentUser?.role === "staff";
+  const myShiftType = currentUser?.requestType;
+  const isFlexUser = isStaff && myShiftType === "flex";
+  const isFixUser = isStaff && myShiftType === "fix";
+
   if (!currentUser) return null;
 
   return (
     <div className="w-full space-y-4">
-      <div>
-        <h1 className="page-title">今後のシフト予定</h1>
-        <p className="page-subtitle">Fix / Flex の今後予定を確認できます</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="page-title">今後のシフト予定</h1>
+          <p className="page-subtitle">
+            {isStaff
+              ? myShiftType === "flex"
+                ? "週単位のFlex勤務予定を確認できます"
+                : "今後の勤務予定を確認できます"
+              : "Fix / Flex の今後予定を確認できます"
+            }
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIcalModalOpen(true)}
+          className="shrink-0 flex items-center gap-2 rounded-[var(--ds-radius-pill)] bg-[var(--surface-container)] px-3 py-2 text-xs font-semibold text-[var(--on-surface-variant)] transition-all hover:bg-[var(--surface-container-high)] hover:text-foreground"
+        >
+          <Calendar className="h-4 w-4" />
+          <span className="hidden sm:inline">iCal連携</span>
+        </button>
       </div>
 
-      <div className="surface-card px-4 py-4 sm:px-5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="inline-flex rounded-full border border-border bg-card p-1">
+      <div className="surface-card px-3 py-3 sm:px-5 sm:py-4">
+        {/* モバイル: 縦積み / デスクトップ: 横並び */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* 期間切り替えトグル */}
+          <div className="inline-flex self-start rounded-[var(--ds-radius-pill)] bg-[var(--surface-container)] p-1">
             <button
               type="button"
               onClick={() => setViewMode("week")}
               className={cn(
-                "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                "rounded-[var(--ds-radius-pill)] px-4 py-1.5 text-xs font-bold transition-all",
                 viewMode === "week"
-                  ? "bg-[var(--primary-container)] text-[var(--on-primary-container)]"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-[var(--primary)] text-white shadow-[0_2px_6px_rgba(50,93,168,0.3)]"
+                  : "text-[var(--on-surface-variant)] hover:text-foreground"
               )}
             >
               1週間
@@ -416,37 +443,41 @@ function FutureShiftsScreen() {
               type="button"
               onClick={() => setViewMode("month")}
               className={cn(
-                "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                "rounded-[var(--ds-radius-pill)] px-4 py-1.5 text-xs font-bold transition-all",
                 viewMode === "month"
-                  ? "bg-[var(--primary-container)] text-[var(--on-primary-container)]"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-[var(--primary)] text-white shadow-[0_2px_6px_rgba(50,93,168,0.3)]"
+                  : "text-[var(--on-surface-variant)] hover:text-foreground"
               )}
             >
               1ヶ月
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
-            <PeriodStepButton direction="prev" onClick={movePrev} label="前の期間" />
-            <p className="min-w-[10rem] text-center text-sm font-semibold text-foreground">{periodLabel}</p>
-            <PeriodStepButton direction="next" onClick={moveNext} label="次の期間" />
-            <button type="button" onClick={moveToday} className="button-secondary px-3 text-xs">今日</button>
+          {/* 期間ナビゲーション */}
+          <div className="flex items-center justify-between gap-2 sm:justify-end">
+            <div className="flex items-center gap-1.5">
+              <PeriodStepButton direction="prev" onClick={movePrev} label="前の期間" />
+              <div className="min-w-[8rem] sm:min-w-[10rem] px-2 py-1.5 rounded-[var(--ds-radius-md)] bg-[var(--surface-container)] text-center">
+                <p className="text-sm font-bold text-foreground">{periodLabel}</p>
+              </div>
+              <PeriodStepButton direction="next" onClick={moveNext} label="次の期間" />
+            </div>
+            <button
+              type="button"
+              onClick={moveToday}
+              className="rounded-[var(--ds-radius-pill)] bg-[var(--primary-container)] px-4 py-2 text-xs font-bold text-[var(--on-primary-container)] transition-all hover:bg-[var(--primary-container)]/80 active:scale-[0.98]"
+            >
+              今日
+            </button>
           </div>
         </div>
-
       </div>
 
-      <div className="surface-card overflow-hidden">
-        <div className="grid grid-cols-7 gap-1 border-b border-border bg-muted/20 px-3 py-2">
-          {WEEKDAY_LABELS.map((w) => (
-            <p key={w} className="text-center text-xs font-semibold text-muted-foreground">{w}</p>
-          ))}
-        </div>
-
-        {viewMode === "week" && weekFlexSummaries.length > 0 && (
-          <div className="border-b border-border bg-[var(--tertiary-container)]/20 px-3 py-2">
-            <p className="text-[11px] font-semibold text-[var(--on-surface-variant)]">週次Flex</p>
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
+      {/* Flexユーザー専用: 週単位のサマリー表示 */}
+      {isFlexUser && viewMode === "week" && (
+        <div className="surface-card px-4 py-5 sm:px-6 sm:py-6">
+          {weekFlexSummaries.length > 0 ? (
+            <div className="space-y-4">
               {weekFlexSummaries.map((item) => (
                 <button
                   key={item.key}
@@ -455,12 +486,90 @@ function FutureShiftsScreen() {
                     const req = requestById.get(item.requestId);
                     if (req) setSelectedRequest(req);
                   }}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-[var(--outline-variant)] bg-card px-2.5 py-1 text-left transition-colors hover:bg-muted/30"
-                >
-                  {currentUser.role !== "staff" && (
-                    <span className="text-[11px] font-medium text-foreground">{item.userName}</span>
+                  className={cn(
+                    "w-full rounded-[var(--ds-radius-lg)] border-l-4 p-5 sm:p-6 text-left transition-all hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] group",
+                    item.status === "approved"
+                      ? "border-l-[var(--status-approved)] bg-[var(--status-approved-bg)]/30"
+                      : item.status === "pending"
+                        ? "border-l-[var(--status-pending)] bg-[var(--status-pending-bg)]/30"
+                        : "border-l-[var(--on-surface-variant)] bg-[var(--surface-container)]"
                   )}
-                  <span className="text-[11px] font-semibold text-[var(--on-tertiary-container)]">{item.hours}時間</span>
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm text-[var(--on-surface-variant)]">{periodLabel}</p>
+                        <span
+                          className={cn(
+                            "rounded-[var(--ds-radius-pill)] px-2 py-0.5 text-[10px] font-bold",
+                            item.status === "approved"
+                              ? "bg-[var(--status-approved)] text-white"
+                              : item.status === "pending"
+                                ? "bg-[var(--status-pending)] text-white"
+                                : "bg-[var(--on-surface-variant)] text-white"
+                          )}
+                        >
+                          {item.status === "approved" ? "確定" : item.status === "pending" ? "承認待ち" : "却下"}
+                        </span>
+                      </div>
+                      <p className="text-3xl sm:text-4xl font-bold text-foreground mt-1">
+                        {item.hours}<span className="text-lg sm:text-xl font-semibold text-[var(--on-surface-variant)] ml-1">時間</span>
+                      </p>
+                    </div>
+                    <ChevronRight className="h-6 w-6 text-[var(--on-surface-variant)] transition-colors group-hover:text-foreground" strokeWidth={2} />
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8">
+              <div className="h-14 w-14 rounded-[var(--ds-radius-pill)] bg-[var(--surface-container-high)] flex items-center justify-center mb-4">
+                <CalendarDays className="h-7 w-7 text-[var(--on-surface-variant)]" />
+              </div>
+              <p className="text-base font-semibold text-foreground">この週の予定はありません</p>
+              <p className="text-sm text-[var(--on-surface-variant)] mt-1">新しい申請を作成してください</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Fix / 管理者・レビュアー用: カレンダー表示 */}
+      {!isFlexUser && (
+      <div className="surface-card overflow-hidden">
+        <div className="grid grid-cols-7 border-b border-[var(--outline-variant)]/50 bg-[var(--surface-container)]/50">
+          {WEEKDAY_LABELS.map((w, i) => (
+            <p
+              key={w}
+              className={cn(
+                "py-2 sm:py-2.5 text-center text-[10px] sm:text-xs font-semibold",
+                i === 5 ? "text-[var(--primary)]" : i === 6 ? "text-[var(--status-rejected)]" : "text-[var(--on-surface-variant)]"
+              )}
+            >
+              {w}
+            </p>
+          ))}
+        </div>
+
+        {/* 管理者・レビュアー向け週次Flexサマリー */}
+        {!isStaff && viewMode === "week" && weekFlexSummaries.length > 0 && (
+          <div className="border-b border-[var(--outline-variant)]/50 bg-[var(--tertiary-container)]/10 px-3 py-2.5 sm:px-4 sm:py-3">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-1.5 w-1.5 rounded-[var(--ds-radius-pill)] bg-[var(--tertiary)]" />
+              <p className="text-[11px] sm:text-xs font-semibold text-[var(--on-surface-variant)]">週次Flex</p>
+            </div>
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
+              {weekFlexSummaries.map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => {
+                    const req = requestById.get(item.requestId);
+                    if (req) setSelectedRequest(req);
+                  }}
+                  className="inline-flex items-center gap-1.5 sm:gap-2 rounded-[var(--ds-radius-md)] border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-2 py-1.5 sm:px-3 sm:py-2 text-left transition-all hover:bg-[var(--surface-container)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
+                >
+                  <span className="text-[11px] sm:text-xs font-medium text-foreground">{item.userName}</span>
+                  <span className="text-[11px] sm:text-xs font-bold text-[var(--tertiary)]">{item.hours}h</span>
                   <StatusBadge status={item.status} />
                 </button>
               ))}
@@ -468,11 +577,20 @@ function FutureShiftsScreen() {
           </div>
         )}
 
-        <div className={cn("grid gap-1 p-2", viewMode === "week" ? "grid-cols-7" : "grid-cols-7")}>
-          {calendarDays.map((day) => {
-            const items = eventsByDate.get(day.ymd) ?? [];
+        <div className={cn("grid gap-1 p-2 sm:gap-1.5 sm:p-3", viewMode === "week" ? "grid-cols-7" : "grid-cols-7")}>
+          {calendarDays.map((day, idx) => {
+            const allItems = eventsByDate.get(day.ymd) ?? [];
+            // Fixユーザーの場合はFixイベントのみ、それ以外は全て表示
+            const items = isFixUser ? allItems.filter((item) => item.type === "fix") : allItems;
             const fixItems = items.filter((item) => item.type === "fix");
             const isSelected = selectedDate === day.ymd;
+            const dayOfWeek = idx % 7;
+            const isSaturday = dayOfWeek === 5;
+            const isSunday = dayOfWeek === 6;
+            // 確定済みかどうか（1日1件なので最初のアイテムで判定）
+            const hasApproved = items.some((item) => item.status === "approved");
+            const hasPending = items.some((item) => item.status === "pending");
+            const hasItem = items.length > 0;
 
             return (
               <button
@@ -480,60 +598,86 @@ function FutureShiftsScreen() {
                 type="button"
                 onClick={() => setSelectedDate(day.ymd)}
                 className={cn(
-                  "rounded-[var(--ds-radius-md)] border p-2 text-left transition-colors",
-                  viewMode === "week" ? "min-h-[7.5rem]" : "min-h-[6rem]",
-                  day.inCurrentMonth ? "bg-card" : "bg-muted/30",
-                  day.isPast ? "opacity-65" : "",
-                  isSelected ? "border-[var(--primary)] bg-[var(--primary-container)]/25" : "border-border hover:bg-muted/25"
+                  "rounded-[var(--ds-radius-sm)] p-1.5 sm:p-2 text-left transition-all",
+                  viewMode === "week" ? "min-h-[5rem] sm:min-h-[7rem]" : "min-h-[4rem] sm:min-h-[5.5rem]",
+                  day.inCurrentMonth ? "bg-[var(--surface-container-lowest)]" : "bg-[var(--surface-container)]/50",
+                  day.isPast ? "opacity-50" : "",
+                  isSelected
+                    ? "ring-2 ring-[var(--primary)] bg-[var(--primary-container)]/20 shadow-[0_2px_8px_rgba(0,0,0,0.08)]"
+                    : "hover:bg-[var(--surface-container)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.04)]"
                 )}
               >
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-0.5">
                   <span
                     className={cn(
-                      "inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold",
+                      "inline-flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-[var(--ds-radius-pill)] text-[11px] sm:text-xs font-bold transition-all",
                       day.isToday
-                        ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
+                        ? "bg-[var(--primary)] text-white shadow-[0_2px_6px_rgba(50,93,168,0.4)]"
                         : isSelected
-                          ? "border border-[var(--primary)] text-[var(--primary)]"
-                          : day.inCurrentMonth
-                            ? "text-foreground"
-                            : "text-muted-foreground"
+                          ? "bg-[var(--primary-container)] text-[var(--primary)]"
+                          : isSaturday
+                            ? "text-[var(--primary)]"
+                            : isSunday
+                              ? "text-[var(--status-rejected)]"
+                              : day.inCurrentMonth
+                                ? "text-foreground"
+                                : "text-[var(--on-surface-variant)]/50"
                     )}
                   >
                     {Number(day.ymd.slice(-2))}
                   </span>
-                  {items.length > 0 && <span className="text-[10px] text-muted-foreground">{items.length}件</span>}
+                  {/* ステータスインジケーター：確定済み=緑、承認待ち=オレンジ */}
+                  {hasItem && (
+                    <span
+                      className={cn(
+                        "h-2 w-2 rounded-[var(--ds-radius-pill)]",
+                        hasApproved
+                          ? "bg-[var(--status-approved)]"
+                          : hasPending
+                            ? "bg-[var(--status-pending)]"
+                            : "bg-[var(--on-surface-variant)]/30"
+                      )}
+                    />
+                  )}
                 </div>
 
-                <div className="mt-1.5 space-y-1">
+                {/* イベント表示: モバイルでは非表示、デスクトップで表示 */}
+                <div className="hidden sm:block mt-2 space-y-1">
                   {viewMode === "week" ? (
                     <>
-                      {fixItems.slice(0, 1).map((item) => (
-                        <p
+                      {fixItems.slice(0, 2).map((item) => (
+                        <div
                           key={item.key}
-                          className="truncate rounded px-1.5 py-0.5 text-[10px] font-semibold bg-[var(--primary-container)] text-[var(--on-primary-container)]"
+                          className={cn(
+                            "truncate rounded-[var(--ds-radius-sm)] px-1.5 py-1 text-[10px] font-semibold",
+                            item.status === "approved"
+                              ? "bg-[var(--status-approved-bg)] text-[var(--status-approved)]"
+                              : item.status === "pending"
+                                ? "bg-[var(--status-pending-bg)] text-[var(--status-pending)]"
+                                : "bg-[var(--surface-container-high)] text-[var(--on-surface-variant)]"
+                          )}
                         >
                           {item.shortLabel}
-                        </p>
+                        </div>
                       ))}
-                      {fixItems.length > 1 && <p className="text-[10px] text-muted-foreground">Fix +{fixItems.length - 1}</p>}
                     </>
                   ) : (
                     <>
                       {items.slice(0, 2).map((item) => (
-                        <p
+                        <div
                           key={item.key}
                           className={cn(
-                            "truncate rounded px-1.5 py-0.5 text-[10px] font-semibold",
-                            item.type === "fix"
-                              ? "bg-[var(--primary-container)] text-[var(--on-primary-container)]"
-                              : "bg-[var(--tertiary-container)] text-[var(--on-tertiary-container)]"
+                            "truncate rounded-[var(--ds-radius-sm)] px-1.5 py-0.5 text-[10px] font-semibold",
+                            item.status === "approved"
+                              ? "bg-[var(--status-approved-bg)] text-[var(--status-approved)]"
+                              : item.status === "pending"
+                                ? "bg-[var(--status-pending-bg)] text-[var(--status-pending)]"
+                                : "bg-[var(--surface-container-high)] text-[var(--on-surface-variant)]"
                           )}
                         >
                           {item.shortLabel}
-                        </p>
+                        </div>
                       ))}
-                      {items.length > 2 && <p className="text-[10px] text-muted-foreground">+{items.length - 2}</p>}
                     </>
                   )}
                 </div>
@@ -542,35 +686,72 @@ function FutureShiftsScreen() {
           })}
         </div>
         {viewMode === "week" && weekFixSummaries.length > 0 && (
-          <div className="border-t border-border bg-[var(--tertiary-container)]/20 px-3 py-2">
-            <p className="text-[11px] font-semibold text-[var(--on-surface-variant)]">1週間のFix合計</p>
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
-              {weekFixSummaries.map((item) => (
-                <span
-                  key={item.key}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-[var(--outline-variant)] bg-card px-2.5 py-1"
-                >
-                  {currentUser.role !== "staff" && (
-                    <span className="text-[11px] font-medium text-foreground">{item.userName}</span>
-                  )}
-                  <span className="text-[11px] font-semibold text-[var(--on-primary-container)]">FIX</span>
-                  <span className="text-[11px] font-semibold text-[var(--on-surface)]">合計{item.totalHours}時間</span>
-                </span>
-              ))}
+          <div className="border-t border-[var(--outline-variant)]/50 bg-[var(--primary-container)]/10 px-3 py-2.5 sm:px-4 sm:py-3">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-1.5 w-1.5 rounded-[var(--ds-radius-pill)] bg-[var(--primary)]" />
+              <p className="text-[11px] sm:text-xs font-semibold text-[var(--on-surface-variant)]">
+                {isFixUser ? "週の合計" : "1週間のFix合計"}
+              </p>
             </div>
+            {isFixUser ? (
+              // Fixスタッフ向け: シンプルに合計時間だけ
+              <p className="text-xl sm:text-2xl font-bold text-foreground">
+                {weekFixSummaries[0]?.totalHours ?? 0}<span className="text-sm font-semibold text-[var(--on-surface-variant)] ml-1">時間</span>
+              </p>
+            ) : (
+              // 管理者・レビュアー向け: ユーザーごとのリスト
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                {weekFixSummaries.map((item) => (
+                  <span
+                    key={item.key}
+                    className="inline-flex items-center gap-1.5 sm:gap-2 rounded-[var(--ds-radius-md)] border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-2 py-1.5 sm:px-3 sm:py-2"
+                  >
+                    <span className="text-[11px] sm:text-xs font-medium text-foreground">{item.userName}</span>
+                    <span className="text-[11px] sm:text-xs font-bold text-[var(--primary)]">{item.totalHours}h</span>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
+      )}
 
-      <div className="surface-card px-4 py-4 sm:px-5">
-        <h2 className="text-sm font-semibold text-foreground">{formatJstDateLabel(`${selectedDate}T00:00:00+09:00`)}</h2>
-        <p className="mt-0.5 text-xs text-muted-foreground">シフト {selectedFixItems.length}件</p>
+      {/* 日付詳細セクション - Fixユーザー、管理者、レビュアー用 */}
+      {!isFlexUser && (
+      <div className="surface-card px-3 py-4 sm:px-5 sm:py-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm sm:text-base font-bold text-foreground">{formatJstDateLabel(`${selectedDate}T00:00:00+09:00`)}</h2>
+          </div>
+          {/* ステータスインジケーター */}
+          {selectedFixItems.length > 0 && (
+            <span
+              className={cn(
+                "rounded-[var(--ds-radius-pill)] px-2.5 py-1 text-[10px] sm:text-xs font-bold",
+                selectedFixItems[0]?.status === "approved"
+                  ? "bg-[var(--status-approved-bg)] text-[var(--status-approved)]"
+                  : selectedFixItems[0]?.status === "pending"
+                    ? "bg-[var(--status-pending-bg)] text-[var(--status-pending)]"
+                    : "bg-[var(--surface-container-high)] text-[var(--on-surface-variant)]"
+              )}
+            >
+              {selectedFixItems[0]?.status === "approved" ? "確定" : selectedFixItems[0]?.status === "pending" ? "承認待ち" : "却下"}
+            </span>
+          )}
+        </div>
 
-        <div className="mt-3 space-y-2">
+        <div className="mt-3 sm:mt-4 space-y-2">
           {selectedFixItems.length === 0 ? (
-            <div className="rounded-[var(--ds-radius-md)] border border-border bg-muted/30 px-3 py-3 text-xs text-muted-foreground">
-              この日のシフトはありません。
+            // Fixユーザーの場合は簡潔な表示
+            isFixUser ? null : (
+            <div className="flex flex-col items-center justify-center rounded-[var(--ds-radius-lg)] border border-dashed border-[var(--outline-variant)] bg-[var(--surface-container)]/50 py-6 sm:py-8">
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-[var(--ds-radius-pill)] bg-[var(--surface-container-high)] flex items-center justify-center mb-3">
+                <CalendarDays className="h-5 w-5 sm:h-6 sm:w-6 text-[var(--on-surface-variant)]" />
+              </div>
+              <p className="text-sm text-[var(--on-surface-variant)]">この日のシフトはありません</p>
             </div>
+            )
           ) : (
             selectedFixItems.map((item) => (
               <button
@@ -580,35 +761,59 @@ function FutureShiftsScreen() {
                   const req = requestById.get(item.requestId);
                   if (req) setSelectedRequest(req);
                 }}
-                className="w-full rounded-[var(--ds-radius-md)] border border-border bg-card px-3 py-3 text-left transition-colors hover:bg-muted/30 group"
+                className={cn(
+                  "w-full rounded-[var(--ds-radius-md)] border-l-4 p-3 sm:p-4 text-left transition-all hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] group",
+                  item.status === "approved"
+                    ? "border-l-[var(--status-approved)] bg-[var(--status-approved-bg)]/50"
+                    : item.status === "pending"
+                      ? "border-l-[var(--status-pending)] bg-[var(--status-pending-bg)]/50"
+                      : "border-l-[var(--on-surface-variant)] bg-[var(--surface-container)]"
+                )}
               >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span
+                <div className="flex items-center justify-between gap-2 sm:gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                    {/* 管理者・レビュアーのみFix/Flexラベル表示 */}
+                    {!isStaff && (
+                    <div
                       className={cn(
-                        "rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                        "flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-[var(--ds-radius-md)]",
                         item.type === "fix"
-                          ? "bg-[var(--primary-container)] text-[var(--on-primary-container)]"
-                          : "bg-[var(--tertiary-container)] text-[var(--on-tertiary-container)]"
+                          ? "bg-[var(--primary-container)]"
+                          : "bg-[var(--tertiary-container)]"
                       )}
                     >
-                      {item.type === "fix" ? "FIX" : "FLEX"}
-                    </span>
-                    {currentUser.role !== "staff" && (
-                      <span className="truncate text-xs font-semibold text-foreground">{item.userName}</span>
+                      <span
+                        className={cn(
+                          "text-[10px] sm:text-xs font-bold",
+                          item.type === "fix"
+                            ? "text-[var(--on-primary-container)]"
+                            : "text-[var(--on-tertiary-container)]"
+                        )}
+                      >
+                        {item.type === "fix" ? "FIX" : "FLEX"}
+                      </span>
+                    </div>
                     )}
+                    <div className="min-w-0">
+                      {!isStaff && (
+                        <p className="truncate text-xs sm:text-sm font-semibold text-foreground">{item.userName}</p>
+                      )}
+                      {/* Fixスタッフ向け: 時間だけ大きく表示 */}
+                      {isFixUser ? (
+                        <p className="text-base sm:text-lg font-bold text-foreground">{item.shortLabel}</p>
+                      ) : (
+                        <p className="text-[11px] sm:text-xs text-[var(--on-surface-variant)] mt-0.5">{item.detailLabel}</p>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <StatusBadge status={item.status} />
-                    <ChevronRight className="text-foreground/80 transition-colors group-hover:text-foreground" style={{ width: 24, height: 24 }} strokeWidth={2.8} />
-                  </div>
+                  <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 text-[var(--on-surface-variant)] transition-colors group-hover:text-foreground shrink-0" strokeWidth={2} />
                 </div>
-                <p className="mt-1.5 text-sm font-semibold text-foreground">{item.detailLabel}</p>
               </button>
             ))
           )}
         </div>
       </div>
+      )}
 
       {selectedRequest && (
         currentUser.role === "staff" ? (
@@ -623,6 +828,14 @@ function FutureShiftsScreen() {
           />
         )
       )}
+
+      {/* iCal Settings Modal */}
+      <ICalSettingsModal
+        open={icalModalOpen}
+        onClose={() => setIcalModalOpen(false)}
+        userRole={currentUser.role}
+        userId={currentUser.id}
+      />
     </div>
   );
 }

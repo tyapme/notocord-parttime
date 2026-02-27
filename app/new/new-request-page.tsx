@@ -121,7 +121,7 @@ export function NewRequestScreen({ onSuccess }: { onSuccess: () => void }) {
   if (submitted) {
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-3">
-        <div className="h-12 w-12 rounded-2xl bg-accent flex items-center justify-center">
+        <div className="h-12 w-12 rounded-[var(--ds-radius-lg)] bg-accent flex items-center justify-center">
           <svg className="h-6 w-6 text-accent-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
@@ -144,9 +144,9 @@ export function NewRequestScreen({ onSuccess }: { onSuccess: () => void }) {
         <div className="rounded-[var(--ds-radius-md)] border border-border bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
           承認タイミングによっては希望に添えない可能性があります。余裕を持って申請してください。
         </div>
-        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-muted-foreground">
+        <div className="inline-flex items-center gap-2 rounded-[var(--ds-radius-pill)] border border-[var(--outline-variant)] bg-card px-3 py-1.5 text-xs font-semibold text-muted-foreground">
           申請タイプ
-          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary tracking-wide">
+          <span className="rounded-[var(--ds-radius-pill)] bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary tracking-wide">
             {type === "fix" ? "FIX" : "FLEX"}
           </span>
         </div>

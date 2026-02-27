@@ -69,12 +69,12 @@ export function ReviewScreen() {
       </div>
 
       {/* List tab */}
-      <div className="flex gap-1 p-1 bg-muted/80 rounded-full mb-5 w-fit">
+      <div className="flex gap-1 p-1 bg-[var(--surface-container)] rounded-[var(--ds-radius-pill)] mb-5 w-fit">
         {(["pending", "all"] as ListTab[]).map((t) => (
           <button key={t} onClick={() => setListTab(t)}
             className={cn(
-              "rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
-              listTab === t ? "bg-card text-foreground shadow-[0_1px_2px_rgba(0,0,0,.08)]" : "text-muted-foreground hover:text-foreground"
+              "rounded-[var(--ds-radius-pill)] px-4 py-1.5 text-sm font-medium transition-colors",
+              listTab === t ? "bg-[var(--surface-container-lowest)] text-foreground shadow-[var(--ds-elevation-card)]" : "text-muted-foreground hover:text-foreground"
             )}
           >
             {t === "pending" ? `承認待ち${pendingCount > 0 ? ` (${pendingCount})` : ""}` : "すべて"}

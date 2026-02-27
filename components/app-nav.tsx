@@ -88,12 +88,11 @@ function topIcon(id: TopNavId) {
 }
 
 export function AppNav({ activeTab, onTabChange }: AppNavProps) {
-  const { currentUser, logout, pendingCount, activeAttendanceTab } = useAppStore(
+  const { currentUser, logout, pendingCount } = useAppStore(
     useShallow((s) => ({
       currentUser: s.currentUser,
       logout: s.logout,
       pendingCount: s.requests.filter((r) => r.status === "pending").length,
-      activeAttendanceTab: s.activeAttendanceTab,
     }))
   );
   const [open, setOpen] = useState(false);
@@ -155,31 +154,31 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
 
   return (
     <>
-      <header className="surface-glass sticky top-0 z-40 w-full">
-        <div className="mx-auto flex h-[var(--header-height)] max-w-[var(--ds-layout-max-content-width)] items-center justify-between gap-3 px-[var(--ds-layout-page-gutter)]">
-          <div className="shrink-0">
-            <p className="text-[15px] font-medium tracking-[-0.01em] text-foreground select-none">notocord</p>
+      <header className="surface-glass sticky top-0 z-40 w-full border-b border-[var(--outline-variant)]/50">
+        <div className="mx-auto flex h-[var(--header-height)] max-w-[var(--ds-layout-max-content-width)] items-center justify-between gap-4 px-[var(--ds-layout-page-gutter)]">
+          <div className="shrink-0 flex items-center gap-2">
+            <div className="h-8 w-8 rounded-[var(--ds-radius-sm)] bg-[var(--primary)] flex items-center justify-center">
+              <span className="text-sm font-bold text-white">N</span>
+            </div>
+            <p className="text-base font-semibold tracking-[-0.02em] text-foreground select-none">notocord</p>
           </div>
 
-          <nav className="hidden md:flex h-11 items-center gap-1 overflow-x-auto no-scrollbar" aria-label="メインナビゲーション">
+          <nav className="hidden md:flex h-11 items-center gap-0.5 overflow-x-auto no-scrollbar" aria-label="メインナビゲーション">
             {topNavItems.map((item) => (
               <button
                 key={item}
                 onClick={() => handleTopNavClick(item)}
                 className={cn(
-                  "tap-target relative inline-flex h-10 items-center px-3.5 text-sm whitespace-nowrap transition-colors",
+                  "tap-target relative inline-flex h-10 items-center px-4 text-sm whitespace-nowrap transition-all rounded-[var(--ds-radius-md)]",
                   activeTopNav === item
-                    ? "text-[var(--primary)] font-medium"
-                    : "text-[var(--on-surface-variant)] hover:text-foreground"
+                    ? "text-[var(--primary)] font-semibold bg-[var(--primary-container)]/50"
+                    : "text-[var(--on-surface-variant)] hover:text-foreground hover:bg-[var(--surface-container)]"
                 )}
               >
                 {topLabel(item)}
-                {activeTopNav === item && (
-                  <span className="absolute inset-x-2 -bottom-[1px] h-0.5 rounded-full bg-[var(--primary)]" aria-hidden />
-                )}
                 {item === "shift" && currentUser.role !== "staff" && pendingCount > 0 && (
                   <span
-                    className="absolute -top-0.5 -right-1 h-5 w-5 rounded-full text-[10px] font-bold flex items-center justify-center shadow-[0_4px_12px_rgba(20,35,72,.35)] badge-primary"
+                    className="ml-1.5 h-5 min-w-5 px-1 rounded-[var(--ds-radius-pill)] text-[10px] font-bold flex items-center justify-center shadow-[0_2px_8px_rgba(20,35,72,.25)] badge-primary"
                   >
                     {pendingCount}
                   </span>
@@ -191,11 +190,11 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
           <div className="relative shrink-0">
             <button
               onClick={() => setOpen((v) => !v)}
-              className="tap-target flex h-12 w-12 items-center justify-center rounded-full bg-transparent p-0 text-sm text-[var(--on-surface-variant)] transition-[background-color,color] hover:bg-[var(--surface-container-low)] hover:text-foreground"
+              className="tap-target flex h-10 w-10 items-center justify-center rounded-[var(--ds-radius-pill)] bg-[var(--surface-container)] text-sm text-[var(--on-surface-variant)] transition-all hover:bg-[var(--surface-container-high)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.08)]"
               aria-label="ユーザーメニュー"
             >
               <div
-                className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold select-none border avatar-primary"
+                className="h-8 w-8 rounded-[var(--ds-radius-pill)] flex items-center justify-center text-xs font-bold select-none avatar-primary"
               >
                 {currentUser.name.charAt(0)}
               </div>
@@ -204,12 +203,19 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
             {open && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-                <div className="absolute right-0 top-full mt-2 z-50 w-56 rounded-[var(--ds-component-modal-corner-radius)] border shadow-[var(--ds-elevation-overlay)] overflow-hidden motion-fade-in dropdown-menu-surface">
-                  <div className="px-4 py-3 border-b border-outline-variant">
-                    <p className="text-sm font-semibold text-foreground leading-tight">{currentUser.name}</p>
-                    <p className="text-[11px] text-[var(--on-surface-variant)] font-mono mt-0.5 truncate">{currentUser.email}</p>
+                <div className="absolute right-0 top-full mt-2 z-50 w-64 rounded-[var(--ds-radius-lg)] border border-[var(--outline-variant)] shadow-[0_8px_30px_rgba(0,0,0,0.12)] overflow-hidden motion-fade-in bg-[var(--surface-container-lowest)]">
+                  <div className="px-4 py-4 border-b border-[var(--outline-variant)]/50 bg-[var(--surface-container)]">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-[var(--ds-radius-pill)] flex items-center justify-center text-sm font-bold select-none avatar-primary">
+                        {currentUser.name.charAt(0)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-foreground leading-tight truncate">{currentUser.name}</p>
+                        <p className="text-[11px] text-[var(--on-surface-variant)] mt-0.5 truncate">{currentUser.email}</p>
+                      </div>
+                    </div>
                     <span className={cn(
-                      "inline-block mt-1.5 text-[10px] font-semibold rounded-full px-2 py-0.5 tracking-wide border",
+                      "inline-block mt-3 text-[10px] font-semibold rounded-[var(--ds-radius-pill)] px-2.5 py-1 tracking-wide",
                       currentUser.role === "admin" ? "bg-[var(--primary-container)] text-[var(--on-primary-container)]"
                         : currentUser.role === "reviewer" ? "bg-[var(--secondary-container)] text-[var(--on-secondary-container)]"
                           : "bg-[var(--surface-container-highest)] text-[var(--on-surface-variant)]"
@@ -217,16 +223,18 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
                       {ROLE_LABELS[currentUser.role]}
                     </span>
                   </div>
-                  <button
-                    onClick={() => {
-                      logout();
-                      setOpen(false);
-                    }}
-                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-[var(--on-surface-variant)] hover:text-foreground hover:bg-[var(--surface-container)] transition-colors text-left"
-                  >
-                    <LogOut className="h-4 w-4 shrink-0" />
-                    ログアウト
-                  </button>
+                  <div className="p-2">
+                    <button
+                      onClick={() => {
+                        logout();
+                        setOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--on-surface-variant)] hover:text-[var(--status-rejected)] hover:bg-[var(--status-rejected-bg)] rounded-[var(--ds-radius-md)] transition-colors text-left"
+                    >
+                      <LogOut className="h-4 w-4 shrink-0" />
+                      ログアウト
+                    </button>
+                  </div>
                 </div>
               </>
             )}
@@ -234,25 +242,25 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
         </div>
 
         {(isShiftActive || shiftMenuOpen) && (
-          <div className="border-t border-[var(--outline-variant)]/80">
-            <div className="mx-auto flex h-11 max-w-[var(--ds-layout-max-content-width)] items-center gap-1 overflow-x-auto no-scrollbar px-[var(--ds-layout-page-gutter)]">
+          <div className="border-b border-[var(--outline-variant)]/50 bg-[var(--surface-container-lowest)]">
+            <div className="mx-auto flex h-11 max-w-[var(--ds-layout-max-content-width)] items-center gap-1.5 overflow-x-auto no-scrollbar px-[var(--ds-layout-page-gutter)]">
               {shiftTabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => onTabChange(tab.id)}
                   className={cn(
-                    "relative inline-flex h-9 items-center px-3.5 text-xs font-medium whitespace-nowrap transition-colors",
+                    "inline-flex h-8 items-center px-4 text-xs font-semibold whitespace-nowrap transition-all rounded-[var(--ds-radius-pill)]",
                     activeTab === tab.id
-                      ? "text-[var(--primary)]"
-                      : "text-[var(--on-surface-variant)] hover:text-foreground"
+                      ? "text-white bg-[var(--primary)] shadow-[0_2px_8px_rgba(50,93,168,0.25)]"
+                      : "text-[var(--on-surface-variant)] hover:text-foreground hover:bg-[var(--surface-container)]"
                   )}
                 >
                   {tab.label}
                   {tab.id === "review" && pendingCount > 0 && (
-                    <span className="ml-1.5 text-[10px] font-bold text-[var(--status-pending)]">({pendingCount})</span>
-                  )}
-                  {activeTab === tab.id && (
-                    <span className="absolute inset-x-2 -bottom-[1px] h-0.5 rounded-full bg-[var(--primary)]" aria-hidden />
+                    <span className={cn(
+                      "ml-1.5 text-[10px] font-bold",
+                      activeTab === tab.id ? "text-white/80" : "text-[var(--status-pending)]"
+                    )}>({pendingCount})</span>
                   )}
                 </button>
               ))}
@@ -261,23 +269,20 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
         )}
 
         {(isAttendanceActive || attendanceMenuOpen) && (
-          <div className="border-t border-[var(--outline-variant)]/80">
-            <div className="mx-auto flex h-11 max-w-[var(--ds-layout-max-content-width)] items-center gap-1 overflow-x-auto no-scrollbar px-[var(--ds-layout-page-gutter)]">
+          <div className="border-b border-[var(--outline-variant)]/50 bg-[var(--surface-container-lowest)]">
+            <div className="mx-auto flex h-11 max-w-[var(--ds-layout-max-content-width)] items-center gap-1.5 overflow-x-auto no-scrollbar px-[var(--ds-layout-page-gutter)]">
               {attendanceTabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => onTabChange(tab.id)}
                   className={cn(
-                    "relative inline-flex h-9 items-center px-3.5 text-xs font-medium whitespace-nowrap transition-colors",
+                    "inline-flex h-8 items-center px-4 text-xs font-semibold whitespace-nowrap transition-all rounded-[var(--ds-radius-pill)]",
                     activeTab === tab.id
-                      ? "text-[var(--primary)]"
-                      : "text-[var(--on-surface-variant)] hover:text-foreground"
+                      ? "text-white bg-[var(--primary)] shadow-[0_2px_8px_rgba(50,93,168,0.25)]"
+                      : "text-[var(--on-surface-variant)] hover:text-foreground hover:bg-[var(--surface-container)]"
                   )}
                 >
                   {tab.label}
-                  {activeTab === tab.id && (
-                    <span className="absolute inset-x-2 -bottom-[1px] h-0.5 rounded-full bg-[var(--primary)]" aria-hidden />
-                  )}
                 </button>
               ))}
             </div>
@@ -287,12 +292,12 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--outline-variant)]/90 bg-[color-mix(in_oklab,var(--surface-container-low)_92%,transparent)] backdrop-blur-md px-2 pt-2 pb-[max(env(safe-area-inset-bottom),8px)] md:hidden">
         <div
-          className="relative mx-auto grid max-w-[var(--ds-layout-max-content-width)] rounded-2xl p-1"
+          className="relative mx-auto grid max-w-[var(--ds-layout-max-content-width)] rounded-[var(--ds-radius-lg)] p-1"
           style={{ gridTemplateColumns: `repeat(${topNavItems.length}, minmax(0, 1fr))` }}
         >
           <span
             aria-hidden
-            className="pointer-events-none absolute left-1 top-1 bottom-1 rounded-xl bg-[var(--primary-container)] shadow-[0_1px_2px_rgba(14,18,27,.12)] transition-transform duration-300 ease-out"
+            className="pointer-events-none absolute left-1 top-1 bottom-1 rounded-[var(--ds-radius-md)] bg-[var(--primary-container)] shadow-[0_1px_2px_rgba(14,18,27,.12)] transition-transform duration-300 ease-out"
             style={{
               width: `calc((100% - 0.5rem) / ${topNavItems.length})`,
               transform: `translateX(${activeIndex * 100}%)`,
@@ -306,7 +311,7 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
                 key={`mobile-${item}`}
                 onClick={() => handleTopNavClick(item)}
                 className={cn(
-                  "relative z-10 flex h-[56px] flex-col items-center justify-center gap-0.5 rounded-xl transition-colors",
+                  "relative z-10 flex h-[56px] flex-col items-center justify-center gap-0.5 rounded-[var(--ds-radius-md)] transition-colors",
                   isActive
                     ? "text-[var(--on-primary-container)]"
                     : "text-[var(--on-surface-variant)] hover:text-foreground"
@@ -317,7 +322,7 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
                 <Icon className="h-[22px] w-[22px]" strokeWidth={2.4} />
                 <span className="text-[10px] font-medium leading-none">{topLabel(item)}</span>
                 {item === "shift" && currentUser.role !== "staff" && pendingCount > 0 && (
-                  <span className="absolute right-[calc(50%-22px)] top-1 min-w-[18px] h-[18px] rounded-full px-1 text-[10px] font-bold leading-[18px] text-center shadow-[0_4px_12px_rgba(20,35,72,.35)] badge-primary"
+                  <span className="absolute right-[calc(50%-22px)] top-1 min-w-[18px] h-[18px] rounded-[var(--ds-radius-pill)] px-1 text-[10px] font-bold leading-[18px] text-center shadow-[0_4px_12px_rgba(20,35,72,.35)] badge-primary"
                   >
                     {pendingCount}
                   </span>
