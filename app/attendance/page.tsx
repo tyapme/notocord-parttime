@@ -431,6 +431,7 @@ function AttendanceScreen() {
       setError(result.error ?? "出勤に失敗しました");
       return;
     }
+    setMyStatus("working"); // 即座にステータス更新
     setNotice("出勤しました");
     await refreshData();
   };
@@ -442,6 +443,7 @@ function AttendanceScreen() {
       setError(result.error ?? "休憩開始に失敗しました");
       return;
     }
+    setMyStatus("on_break"); // 即座にステータス更新
     setNotice("休憩を開始しました");
     await refreshData();
   };
@@ -453,6 +455,7 @@ function AttendanceScreen() {
       setError(result.error ?? "休憩終了に失敗しました");
       return;
     }
+    setMyStatus("working"); // 即座にステータス更新
     setNotice("休憩を終了しました");
     await refreshData();
   };
@@ -465,6 +468,7 @@ function AttendanceScreen() {
       setError(result.error ?? "退勤に失敗しました");
       return;
     }
+    setMyStatus("off"); // 即座にステータス更新
     setNotice("退勤しました");
     await refreshData();
   };
