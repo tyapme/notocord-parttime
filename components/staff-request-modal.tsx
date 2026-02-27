@@ -322,11 +322,7 @@ export function StaffRequestModal({
           : <FlexDetailRows req={request as FlexRequest} />
       ) : (
         <div className="space-y-3">
-          {request.status === "approved" && (
-            <p className="text-xs font-medium text-[var(--status-pending)]">
-              保存すると申請中に戻り、レビュアー承認待ちになります。
-            </p>
-          )}
+          {request.status === "approved"}
           {request.type === "fix" ? (
             <>
               <SelectField
