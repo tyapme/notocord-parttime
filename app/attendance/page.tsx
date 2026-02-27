@@ -279,6 +279,8 @@ function AttendanceScreen() {
   const [editMessage, setEditMessage] = useState("");
   const [manageFilterUserId, setManageFilterUserId] = useState("all");
   const [showClockOutConfirm, setShowClockOutConfirm] = useState(false);
+  const [showThankYou, setShowThankYou] = useState(false);
+  const [modalTaskInput, setModalTaskInput] = useState("");
 
   // 現在時刻を1秒ごとに更新
   useEffect(() => {
@@ -491,6 +493,7 @@ function AttendanceScreen() {
       return;
     }
     setMyStatus("working"); // 即座にステータス更新
+    setShowThankYou(false); // お疲れ様画面を消す
     toast({ description: "出勤しました" });
     await refreshData();
   };
@@ -525,7 +528,7 @@ function AttendanceScreen() {
       return;
     }
     setMyStatus("off"); // 即座にステータス更新
-    toast({ description: "退勤しました" });
+    setShowThankYou(true); // お疲れ様画面を表示
     await refreshData();
   };
 
@@ -613,7 +616,25 @@ function AttendanceScreen() {
 
       {activeTab === "home" && role === "staff" && (
         <div className="space-y-4">
+          {/* お疲れ様でした画面 */}
+          {myStatus === "off" && showThankYou && (
+            <div className="rounded-2xl bg-[var(--status-approved)]/10 border border-[var(--status-approved)]/20 p-8 text-center">
+              <CheckCircle2 className="h-12 w-12 text-[var(--status-approved)] mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-foreground mb-2">お疲れ様でした！</h2>
+              <p className="text-sm text-[var(--on-surface-variant)] mb-6">本日の勤務が完了しました</p>
+              <button
+                type="button"
+                onClick={() => setShowThankYou(false)}
+                className="rounded-xl bg-[var(--primary)] px-6 py-2.5 text-sm font-semibold text-[var(--primary-foreground)] transition-all hover:bg-[var(--primary)]/90"
+              >
+                閉じる
+              </button>
+            </div>
+          )}
+
           {/* 現在時刻ヒーロー */}
+          {!(myStatus === "off" && showThankYou) && (
+          <>
           <div className="rounded-2xl bg-[var(--primary-container)] p-6">
             <div className="flex items-start justify-between">
               <div>
@@ -678,8 +699,11 @@ function AttendanceScreen() {
               </div>
             )}
           </div>
+          </>
+          )}
 
           {/* アクションボタン - 状態に応じて必要なものだけ表示 */}
+          {!(myStatus === "off" && showThankYou) && (
           <div className={cn(
             "grid gap-2",
             myStatus === "off" ? "grid-cols-1" : "grid-cols-2"
@@ -731,6 +755,7 @@ function AttendanceScreen() {
               </button>
             )}
           </div>
+          )}
 
           {/* タスク入力 */}
           {myStatus !== "off" && (
@@ -1222,26 +1247,74 @@ function AttendanceScreen() {
               退勤してよろしいですか？
             </p>
 
-            {/* やったこと一覧 */}
-            <div className="rounded-xl bg-[var(--surface-container)] p-4">
-              <p className="text-xs font-medium text-[var(--on-surface-variant)] mb-2">やったこと</p>
-              {parseTaskLines(homeTaskDraft).length > 0 ? (
+            {/* やったこと一覧 + 追加入力 */}
+            <div className="rounded-xl bg-[var(--surface-container)] p-4 space-y-3">
+              <p className="text-xs font-medium text-[var(--on-surface-variant)]">やったこと</p>
+              {parseTaskLines(homeTaskDraft).length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {parseTaskLines(homeTaskDraft).map((task, idx) => (
                     <span
                       key={idx}
-                      className="inline-flex items-center rounded-full bg-[var(--primary)]/10 px-3 py-1 text-sm text-foreground"
+                      className="inline-flex items-center gap-1.5 rounded-full bg-[var(--primary)]/10 px-3 py-1.5 text-sm text-foreground"
                     >
                       {task}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const tasks = parseTaskLines(homeTaskDraft);
+                          tasks.splice(idx, 1);
+                          setHomeTaskDraft(formatTaskLines(tasks));
+                        }}
+                        className="ml-0.5 rounded-full p-0.5 hover:bg-[var(--primary)]/20 transition-colors"
+                      >
+                        <svg className="h-3.5 w-3.5 text-[var(--on-surface-variant)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                      </button>
                     </span>
                   ))}
                 </div>
-              ) : (
+              )}
+              {parseTaskLines(homeTaskDraft).length === 0 && (
                 <div className="flex items-center gap-2 text-[var(--status-rejected)]">
                   <AlertTriangle className="h-4 w-4" />
                   <span className="text-sm">「やったこと」を入力してください</span>
                 </div>
               )}
+              {/* モーダル内タスク追加 */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="やったことを追加"
+                  value={modalTaskInput}
+                  onChange={(e) => setModalTaskInput(e.target.value)}
+                  className="flex-1 rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-3 py-2 text-sm text-foreground placeholder:text-[var(--on-surface-variant)]/50 focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+                  onKeyDown={(e) => {
+                    if (e.nativeEvent.isComposing) return;
+                    if (e.key === "Enter" && modalTaskInput.trim()) {
+                      e.preventDefault();
+                      const tasks = parseTaskLines(homeTaskDraft);
+                      tasks.push(modalTaskInput.trim());
+                      setHomeTaskDraft(formatTaskLines(tasks));
+                      setModalTaskInput("");
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  disabled={!modalTaskInput.trim()}
+                  onClick={() => {
+                    if (!modalTaskInput.trim()) return;
+                    const tasks = parseTaskLines(homeTaskDraft);
+                    tasks.push(modalTaskInput.trim());
+                    setHomeTaskDraft(formatTaskLines(tasks));
+                    setModalTaskInput("");
+                  }}
+                  className="rounded-lg bg-[var(--primary)] px-3 py-2 text-sm font-semibold text-[var(--primary-foreground)] transition-colors hover:bg-[var(--primary)]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  追加
+                </button>
+              </div>
             </div>
 
             {myOpenSession && (
