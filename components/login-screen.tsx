@@ -5,9 +5,7 @@ import { cn } from "@/lib/utils";
 import { useAppStore } from "@/lib/store";
 
 function normalizeCodeInput(value: string): string {
-  const normalized = value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
-  if (normalized.length <= 4) return normalized;
-  return `${normalized.slice(0, 4)}-${normalized.slice(4)}`;
+  return value.replace(/\D/g, "").slice(0, 6);
 }
 
 export function LoginScreen() {
@@ -16,8 +14,6 @@ export function LoginScreen() {
 
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
-  const [challenge, setChallenge] = useState("");
-  const [issuedCode, setIssuedCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -35,11 +31,9 @@ export function LoginScreen() {
     setLoading(true);
     sendSignInCode(email.trim())
       .then((res) => {
-        if (!res.ok || !res.challenge || !res.code) {
+        if (!res.ok) {
           setError(res.error || "認証コードの発行に失敗しました");
         } else {
-          setChallenge(res.challenge);
-          setIssuedCode(res.code);
           setCode("");
           setSent(true);
         }
@@ -54,17 +48,13 @@ export function LoginScreen() {
       setError("メールアドレスを入力してください");
       return;
     }
-    if (!challenge) {
-      setError("先に認証コードを発行してください");
-      return;
-    }
-    if (code.replace("-", "").length !== 8) {
+    if (!code.trim()) {
       setError("認証コードを入力してください");
       return;
     }
 
     setVerifying(true);
-    verifySignInCode({ email: email.trim(), code, challenge })
+    verifySignInCode({ email: email.trim(), code })
       .then((res) => {
         if (!res.ok) {
           setError(res.error || "サインインに失敗しました");
@@ -97,9 +87,7 @@ export function LoginScreen() {
               onChange={(e) => {
                 setEmail(e.target.value);
                 setError("");
-                setChallenge("");
                 setSent(false);
-                setIssuedCode("");
               }}
               placeholder="user@example.com"
               className={cn("input-base", error && "border-[var(--status-rejected)]")}
@@ -116,13 +104,14 @@ export function LoginScreen() {
               loading ? "bg-muted text-muted-foreground cursor-not-allowed" : ""
             )}
           >
-            {loading ? "発行中..." : "認証コードを発行"}
+            {loading ? "送信中..." : "認証コードを送信"}
           </button>
 
           {sent && (
             <div className="rounded-[var(--ds-radius-md)] border border-[var(--outline-variant)] bg-[var(--surface-container)] px-3.5 py-3">
-              <p className="text-[11px] text-[var(--on-surface-variant)]">認証コード</p>
-              <p className="mt-1 text-lg font-semibold tracking-[0.08em] text-foreground">{issuedCode}</p>
+              <p className="text-xs font-medium text-[var(--status-approved)]">
+                メールに認証コードを送信しました。受信したコードを入力してください。
+              </p>
             </div>
           )}
 
@@ -134,17 +123,17 @@ export function LoginScreen() {
               id="code"
               type="text"
               autoComplete="one-time-code"
-              inputMode="text"
+              inputMode="numeric"
               value={code}
               onChange={(e) => {
                 setCode(normalizeCodeInput(e.target.value));
                 setError("");
               }}
-              placeholder="AAAA-2222"
-              className={cn("input-base tracking-[0.08em] uppercase", error && "border-[var(--status-rejected)]")}
+              placeholder="123456"
+              className={cn("input-base tracking-[0.16em]", error && "border-[var(--status-rejected)]")}
               style={{ fontSize: "16px" }}
             />
-            <p className="text-[11px] text-[var(--on-surface-variant)]">英大文字と数字 8桁（例: AAAA-2222）</p>
+            <p className="text-[11px] text-[var(--on-surface-variant)]">メールで受信した6桁コードを入力してください</p>
           </div>
 
           {error && (

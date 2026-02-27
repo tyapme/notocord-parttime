@@ -182,8 +182,8 @@ interface AppState {
   error: string | null;
 
   init: () => Promise<void>;
-  sendSignInCode: (email: string) => Promise<{ ok: boolean; error?: string; challenge?: string; code?: string; expiresAt?: number }>;
-  verifySignInCode: (payload: { email: string; code: string; challenge: string }) => Promise<{ ok: boolean; error?: string }>;
+  sendSignInCode: (email: string) => Promise<{ ok: boolean; error?: string; bootstrap?: boolean }>;
+  verifySignInCode: (payload: { email: string; code: string }) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
 
   refresh: () => Promise<void>;
@@ -299,21 +299,19 @@ export const useAppStore = create<AppState>()((set, get) => ({
       }
       return {
         ok: true,
-        challenge: data?.challenge,
-        code: data?.code,
-        expiresAt: data?.expiresAt,
+        bootstrap: Boolean(data?.bootstrap),
       };
     } catch {
       return { ok: false, error: "認証コードの発行に失敗しました" };
     }
   },
 
-  verifySignInCode: async ({ email, code, challenge }) => {
+  verifySignInCode: async ({ email, code }) => {
     try {
       const res = await fetch("/api/auth/verify-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, code, challenge }),
+        body: JSON.stringify({ email, code }),
       });
       const data = await res.json();
       if (!res.ok) {

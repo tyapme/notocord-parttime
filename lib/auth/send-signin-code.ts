@@ -1,8 +1,8 @@
 import { createSecretSupabaseClient } from "@/lib/supabase/server";
-import { createSigninChallenge, generateSigninCode, generateTempPassword } from "@/lib/auth/signin-code";
+import { randomUUID } from "crypto";
 
 type IssueSigninCodeResult =
-  | { ok: true; challenge: string; code: string; expiresAt: number; bootstrap?: boolean }
+  | { ok: true; bootstrap?: boolean }
   | { ok: false; status: number; error: string };
 
 export async function issueSigninCode(params: {
@@ -22,7 +22,6 @@ export async function issueSigninCode(params: {
     .eq("email", email)
     .single();
 
-  let userId = profile?.id as string | undefined;
   let bootstrap = false;
 
   if (profileError || !profile) {
@@ -42,10 +41,9 @@ export async function issueSigninCode(params: {
       return { ok: false, status: 404, error: "アカウントが見つかりません" };
     }
 
-    const bootstrapPassword = generateTempPassword();
     const { data: created, error: createError } = await admin.auth.admin.createUser({
       email,
-      password: bootstrapPassword,
+      password: randomUUID(),
       email_confirm: true,
       user_metadata: { name: nameInput || email },
     });
@@ -65,32 +63,10 @@ export async function issueSigninCode(params: {
       return { ok: false, status: 400, error: insertError.message };
     }
 
-    userId = created.user.id;
     bootstrap = true;
   } else if (!profile.active) {
     return { ok: false, status: 403, error: "このアカウントは無効化されています" };
   }
 
-  if (!userId) {
-    return { ok: false, status: 500, error: "ユーザー情報の取得に失敗しました" };
-  }
-
-  const tempPassword = generateTempPassword();
-  const { error: passwordError } = await admin.auth.admin.updateUserById(userId, {
-    password: tempPassword,
-    email_confirm: true,
-  });
-  if (passwordError) {
-    return { ok: false, status: 400, error: passwordError.message };
-  }
-
-  const code = generateSigninCode();
-  const { challenge, expiresAt } = createSigninChallenge({
-    email,
-    userId,
-    code,
-    tempPassword,
-  });
-
-  return { ok: true, challenge, code, expiresAt, bootstrap };
+  return { ok: true, bootstrap };
 }

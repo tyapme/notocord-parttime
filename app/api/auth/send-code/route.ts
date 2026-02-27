@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { issueSigninCode } from "@/lib/auth/send-signin-code";
+import { createRouteHandlerClient } from "@/lib/supabase/server";
 
 export async function POST(req: Request) {
   try {
@@ -12,11 +13,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: result.error }, { status: result.status });
     }
 
+    const anon = await createRouteHandlerClient();
+    const { error } = await anon.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: false,
+      },
+    });
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
     return NextResponse.json({
       ok: true,
-      challenge: result.challenge,
-      code: result.code,
-      expiresAt: result.expiresAt,
       bootstrap: result.bootstrap ?? false,
     });
   } catch {
