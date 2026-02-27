@@ -1191,7 +1191,7 @@ function AttendanceScreen() {
                   "flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all",
                   parseTaskLines(homeTaskDraft).length === 0
                     ? "bg-muted text-muted-foreground cursor-not-allowed"
-                    : "bg-[var(--status-rejected)] text-white hover:bg-[var(--status-rejected)]/90"
+                    : "bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary)]/90"
                 )}
               >
                 退勤する
