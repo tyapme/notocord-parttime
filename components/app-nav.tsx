@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { Role } from "@/lib/types";
 import { CalendarDays, Clock3, Home, LogOut, Settings, Users } from "lucide-react";
 
-export type Tab = "home" | "attendance" | "shifts" | "my" | "new" | "review" | "proxy" | "users" | "admin";
+export type Tab = "home" | "attendance" | "attendance-home" | "attendance-list" | "attendance-manage" | "shifts" | "my" | "new" | "review" | "proxy" | "users" | "admin";
 type TopNavId = "home" | "attendance" | "shift" | "users" | "settings";
 
 interface AppNavProps {
@@ -29,6 +29,23 @@ function getTopNavItems(role: Role): TopNavId[] {
 
 function getDefaultShiftTab(): Tab {
   return "shifts";
+}
+
+function getDefaultAttendanceTab(role: Role): Tab {
+  return role === "staff" ? "attendance-home" : "attendance-list";
+}
+
+function getAttendanceSubmenu(role: Role): { id: Tab; label: string }[] {
+  if (role === "staff") {
+    return [
+      { id: "attendance-home", label: "勤怠ホーム" },
+      { id: "attendance-list", label: "勤怠一覧" },
+    ];
+  }
+  return [
+    { id: "attendance-list", label: "勤怠一覧" },
+    { id: "attendance-manage", label: "管理" },
+  ];
 }
 
 function getShiftSubmenu(role: Role): { id: Tab; label: string }[] {
@@ -56,7 +73,7 @@ function topLabel(id: TopNavId): string {
 
 function toTopNav(tab: Tab): TopNavId {
   if (tab === "home") return "home";
-  if (tab === "attendance") return "attendance";
+  if (tab === "attendance" || tab === "attendance-home" || tab === "attendance-list" || tab === "attendance-manage") return "attendance";
   if (tab === "users") return "users";
   if (tab === "admin") return "settings";
   return "shift";
@@ -71,41 +88,67 @@ function topIcon(id: TopNavId) {
 }
 
 export function AppNav({ activeTab, onTabChange }: AppNavProps) {
-  const { currentUser, logout, pendingCount } = useAppStore(
+  const { currentUser, logout, pendingCount, activeAttendanceTab } = useAppStore(
     useShallow((s) => ({
       currentUser: s.currentUser,
       logout: s.logout,
       pendingCount: s.requests.filter((r) => r.status === "pending").length,
+      activeAttendanceTab: s.activeAttendanceTab,
     }))
   );
   const [open, setOpen] = useState(false);
   const [shiftMenuOpen, setShiftMenuOpen] = useState(false);
+  const [attendanceMenuOpen, setAttendanceMenuOpen] = useState(false);
   const activeTopNav = toTopNav(activeTab);
   const isShiftActive = activeTopNav === "shift";
+  const isAttendanceActive = activeTopNav === "attendance";
 
   useEffect(() => {
-    // Keep submenu behavior same as pre-persistent-shell navigation.
-    setShiftMenuOpen(isShiftActive);
-  }, [isShiftActive]);
+    // 排他的にサブメニューを開く（二重表示防止）
+    if (isShiftActive) {
+      setAttendanceMenuOpen(false);
+      setShiftMenuOpen(true);
+    } else if (isAttendanceActive) {
+      setShiftMenuOpen(false);
+      setAttendanceMenuOpen(true);
+    } else {
+      setShiftMenuOpen(false);
+      setAttendanceMenuOpen(false);
+    }
+  }, [isShiftActive, isAttendanceActive]);
 
   if (!currentUser) return null;
   const topNavItems = getTopNavItems(currentUser.role);
   const activeIndex = Math.max(0, topNavItems.findIndex((item) => item === activeTopNav));
   const shiftTabs = getShiftSubmenu(currentUser.role);
+  const attendanceTabs = getAttendanceSubmenu(currentUser.role);
 
   const handleTopNavClick = (id: TopNavId) => {
+    // 最初に両方のサブメニューを閉じてから、必要なものだけ開く
+    // これにより二重表示を防ぐ
     if (id === "shift") {
+      setAttendanceMenuOpen(false);
       if (isShiftActive) {
         setShiftMenuOpen((v) => !v);
       } else {
-        onTabChange(getDefaultShiftTab());
         setShiftMenuOpen(true);
+        onTabChange(getDefaultShiftTab());
+      }
+      return;
+    }
+    if (id === "attendance") {
+      setShiftMenuOpen(false);
+      if (isAttendanceActive) {
+        setAttendanceMenuOpen((v) => !v);
+      } else {
+        setAttendanceMenuOpen(true);
+        onTabChange(getDefaultAttendanceTab(currentUser.role));
       }
       return;
     }
     setShiftMenuOpen(false);
+    setAttendanceMenuOpen(false);
     if (id === "home") onTabChange("home");
-    else if (id === "attendance") onTabChange("attendance");
     else if (id === "users") onTabChange("users");
     else onTabChange("admin");
   };
@@ -136,11 +179,7 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
                 )}
                 {item === "shift" && currentUser.role !== "staff" && pendingCount > 0 && (
                   <span
-                    className="absolute -top-0.5 -right-1 h-5 w-5 rounded-full text-[10px] font-bold flex items-center justify-center shadow-[0_4px_12px_rgba(20,35,72,.35)]"
-                    style={{
-                      background: "color-mix(in oklab, var(--primary) 78%, black 22%)",
-                      color: "var(--primary-foreground)",
-                    }}
+                    className="absolute -top-0.5 -right-1 h-5 w-5 rounded-full text-[10px] font-bold flex items-center justify-center shadow-[0_4px_12px_rgba(20,35,72,.35)] badge-primary"
                   >
                     {pendingCount}
                   </span>
@@ -156,12 +195,7 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
               aria-label="ユーザーメニュー"
             >
               <div
-                className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold select-none border"
-                style={{
-                  background: "var(--primary-container)",
-                  color: "var(--on-primary-container)",
-                  borderColor: "color-mix(in oklab, var(--primary) 28%, transparent)",
-                }}
+                className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold select-none border avatar-primary"
               >
                 {currentUser.name.charAt(0)}
               </div>
@@ -170,8 +204,8 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
             {open && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-                <div className="absolute right-0 top-full mt-2 z-50 w-56 rounded-[var(--ds-component-modal-corner-radius)] border shadow-[var(--ds-elevation-overlay)] overflow-hidden motion-fade-in" style={{ background: "var(--surface-container-high)", borderColor: "var(--outline-variant)" }}>
-                  <div className="px-4 py-3 border-b" style={{ borderColor: "var(--outline-variant)" }}>
+                <div className="absolute right-0 top-full mt-2 z-50 w-56 rounded-[var(--ds-component-modal-corner-radius)] border shadow-[var(--ds-elevation-overlay)] overflow-hidden motion-fade-in dropdown-menu-surface">
+                  <div className="px-4 py-3 border-b border-outline-variant">
                     <p className="text-sm font-semibold text-foreground leading-tight">{currentUser.name}</p>
                     <p className="text-[11px] text-[var(--on-surface-variant)] font-mono mt-0.5 truncate">{currentUser.email}</p>
                     <span className={cn(
@@ -225,6 +259,30 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
             </div>
           </div>
         )}
+
+        {(isAttendanceActive || attendanceMenuOpen) && (
+          <div className="border-t border-[var(--outline-variant)]/80">
+            <div className="mx-auto flex h-11 max-w-[var(--ds-layout-max-content-width)] items-center gap-1 overflow-x-auto no-scrollbar px-[var(--ds-layout-page-gutter)]">
+              {attendanceTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => onTabChange(tab.id)}
+                  className={cn(
+                    "relative inline-flex h-9 items-center px-3.5 text-xs font-medium whitespace-nowrap transition-colors",
+                    activeTab === tab.id
+                      ? "text-[var(--primary)]"
+                      : "text-[var(--on-surface-variant)] hover:text-foreground"
+                  )}
+                >
+                  {tab.label}
+                  {activeTab === tab.id && (
+                    <span className="absolute inset-x-2 -bottom-[1px] h-0.5 rounded-full bg-[var(--primary)]" aria-hidden />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </header>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--outline-variant)]/90 bg-[color-mix(in_oklab,var(--surface-container-low)_92%,transparent)] backdrop-blur-md px-2 pt-2 pb-[max(env(safe-area-inset-bottom),8px)] md:hidden">
@@ -259,11 +317,7 @@ export function AppNav({ activeTab, onTabChange }: AppNavProps) {
                 <Icon className="h-[22px] w-[22px]" strokeWidth={2.4} />
                 <span className="text-[10px] font-medium leading-none">{topLabel(item)}</span>
                 {item === "shift" && currentUser.role !== "staff" && pendingCount > 0 && (
-                  <span className="absolute right-[calc(50%-22px)] top-1 min-w-[18px] h-[18px] rounded-full px-1 text-[10px] font-bold leading-[18px] text-center shadow-[0_4px_12px_rgba(20,35,72,.35)]"
-                    style={{
-                      background: "color-mix(in oklab, var(--primary) 78%, black 22%)",
-                      color: "var(--primary-foreground)",
-                    }}
+                  <span className="absolute right-[calc(50%-22px)] top-1 min-w-[18px] h-[18px] rounded-full px-1 text-[10px] font-bold leading-[18px] text-center shadow-[0_4px_12px_rgba(20,35,72,.35)] badge-primary"
                   >
                     {pendingCount}
                   </span>

@@ -238,4 +238,22 @@
   }
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* Navigation component utilities */
+  .badge-primary {
+    background: color-mix(in oklab, var(--primary) 78%, black 22%);
+    color: var(--primary-foreground);
+  }
+  .avatar-primary {
+    background: var(--primary-container);
+    color: var(--on-primary-container);
+    border-color: color-mix(in oklab, var(--primary) 28%, transparent);
+  }
+  .dropdown-menu-surface {
+    background: var(--surface-container-high);
+    border-color: var(--outline-variant);
+  }
+  .border-outline-variant {
+    border-color: var(--outline-variant);
+  }
 }

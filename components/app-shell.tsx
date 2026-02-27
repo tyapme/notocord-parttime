@@ -6,9 +6,14 @@ import { useAppStore } from "@/lib/store";
 import { AppNav, Tab } from "./app-nav";
 import { LoginScreen } from "./login-screen";
 
+import type { AttendanceSubTab } from "@/lib/store";
+
 const PATH_BY_TAB: Record<Tab, string> = {
   home: "/home",
   attendance: "/attendance",
+  "attendance-home": "/attendance",
+  "attendance-list": "/attendance",
+  "attendance-manage": "/attendance",
   shifts: "/shift",
   my: "/shift/my",
   new: "/shift/new",
@@ -18,14 +23,21 @@ const PATH_BY_TAB: Record<Tab, string> = {
   admin: "/admin",
 };
 
+function tabToAttendanceSubTab(tab: Tab): AttendanceSubTab | null {
+  if (tab === "attendance-home" || tab === "attendance") return "home";
+  if (tab === "attendance-list") return "list";
+  if (tab === "attendance-manage") return "manage";
+  return null;
+}
+
 function defaultTab(): Tab {
   return "home";
 }
 
 function allowedTabs(role: string): Tab[] {
-  if (role === "staff") return ["home", "attendance", "shifts", "my", "new"];
-  if (role === "reviewer") return ["home", "attendance", "shifts", "review", "proxy", "users"];
-  return ["home", "attendance", "shifts", "review", "proxy", "users", "admin"];
+  if (role === "staff") return ["home", "attendance", "attendance-home", "attendance-list", "shifts", "my", "new"];
+  if (role === "reviewer") return ["home", "attendance", "attendance-list", "attendance-manage", "shifts", "review", "proxy", "users"];
+  return ["home", "attendance", "attendance-list", "attendance-manage", "shifts", "review", "proxy", "users", "admin"];
 }
 
 function isAllowed(role: string, tab: Tab): boolean {
@@ -36,6 +48,7 @@ export function AppShell({ tab, children }: { tab: Tab; children: React.ReactNod
   const currentUser = useAppStore((s) => s.currentUser);
   const init = useAppStore((s) => s.init);
   const authLoading = useAppStore((s) => s.authLoading);
+  const setActiveAttendanceTab = useAppStore((s) => s.setActiveAttendanceTab);
   const router = useRouter();
 
   useEffect(() => {
@@ -44,10 +57,14 @@ export function AppShell({ tab, children }: { tab: Tab; children: React.ReactNod
 
   const navigate = useCallback(
     (nextTab: Tab) => {
+      const subTab = tabToAttendanceSubTab(nextTab);
+      if (subTab) {
+        setActiveAttendanceTab(subTab);
+      }
       const nextPath = PATH_BY_TAB[nextTab];
       router.push(nextPath, { scroll: false });
     },
-    [router]
+    [router, setActiveAttendanceTab]
   );
 
   useEffect(() => {

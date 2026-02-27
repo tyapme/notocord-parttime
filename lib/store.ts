@@ -167,6 +167,8 @@ let fetchUsersInFlight: Promise<void> | null = null;
 const REQUESTS_CACHE_TTL_MS = 15_000;
 const USERS_CACHE_TTL_MS = 30_000;
 
+export type AttendanceSubTab = "home" | "list" | "manage";
+
 interface AppState {
   currentUser: User | null;
   session: Session | null;
@@ -180,7 +182,9 @@ interface AppState {
   lastRequestsFetchedAt: number;
   lastUsersFetchedAt: number;
   error: string | null;
+  activeAttendanceTab: AttendanceSubTab;
 
+  setActiveAttendanceTab: (tab: AttendanceSubTab) => void;
   init: () => Promise<void>;
   sendSignInCode: (email: string) => Promise<{ ok: boolean; error?: string; bootstrap?: boolean }>;
   verifySignInCode: (payload: { email: string; code: string }) => Promise<{ ok: boolean; error?: string }>;
@@ -240,6 +244,9 @@ export const useAppStore = create<AppState>()((set, get) => ({
   lastRequestsFetchedAt: 0,
   lastUsersFetchedAt: 0,
   error: null,
+  activeAttendanceTab: "home",
+
+  setActiveAttendanceTab: (tab) => set({ activeAttendanceTab: tab }),
 
   init: async () => {
     if (get().initialized) return;
