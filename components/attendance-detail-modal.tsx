@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { X, Clock3, Coffee, Play, CheckCircle2, ClipboardList } from "lucide-react";
+import { Clock3, Coffee, Play, CheckCircle2, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AttendanceSessionDb, getWorkMinutesDb, getBreakMinutesDb } from "@/lib/attendance-db";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -81,7 +81,7 @@ export function AttendanceDetailModal({ session, onClose, hourlyRate = 0 }: Atte
 
         {/* ヘッダー */}
         <div className={cn(
-          "flex items-center justify-between px-5 py-4 border-b border-[var(--outline-variant)]/50",
+          "flex items-center px-5 py-4 border-b border-[var(--outline-variant)]/50",
           isMobile && "pt-2"
         )}>
           <div className="flex items-center gap-3">
@@ -93,13 +93,6 @@ export function AttendanceDetailModal({ session, onClose, hourlyRate = 0 }: Atte
               <p className="text-xs text-muted-foreground">{formatDate(clockIn)}</p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-[var(--ds-radius-pill)] text-muted-foreground hover:bg-[var(--surface-container)] hover:text-foreground transition-colors"
-          >
-            <X className="h-5 w-5" />
-          </button>
         </div>
 
         {/* コンテンツ */}
@@ -210,16 +203,6 @@ export function AttendanceDetailModal({ session, onClose, hourlyRate = 0 }: Atte
           </div>
         </div>
 
-        {/* フッター */}
-        <div className="border-t border-[var(--outline-variant)]/50 px-5 py-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="button-secondary w-full h-11"
-          >
-            閉じる
-          </button>
-        </div>
       </div>
     </div>
   );

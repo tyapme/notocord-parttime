@@ -307,12 +307,12 @@ export function UsersDetailScreen() {
         {/* サイドバー - ユーザーリスト */}
         <aside className="surface-card p-4 h-fit md:sticky md:top-4 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
           <div className="relative mb-4">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="検索..."
-              className="input-base h-10 pl-10 pr-8 text-sm"
+              className="input-base h-10 pl-11 pr-8 text-sm"
             />
             {query && (
               <button
@@ -360,7 +360,13 @@ export function UsersDetailScreen() {
                         {u.name.charAt(0)}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className={cn(
+                            "text-sm font-semibold truncate",
+                            isActive ? "text-[var(--on-primary-container)]" : "text-foreground"
+                          )}>
+                            {u.name}
+                          </p>
                           {userPendingCount > 0 && (
                             <span className="shrink-0 rounded-[var(--ds-radius-pill)] bg-[var(--status-pending-bg)] px-2 py-0.5 text-[10px] font-bold text-[var(--status-pending)]">
                               {userPendingCount}
@@ -404,6 +410,7 @@ export function UsersDetailScreen() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
+                      <h2 className="text-lg font-bold text-foreground">{selectedUser.name}</h2>
                       <span className="text-[10px] font-bold rounded-[var(--ds-radius-sm)] px-2 py-0.5 bg-[var(--surface-container-high)] text-muted-foreground uppercase tracking-wide">
                         {ROLE_LABELS[selectedUser.role]}
                       </span>
