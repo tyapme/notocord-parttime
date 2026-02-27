@@ -171,7 +171,7 @@ export function NewRequestScreen({ onSuccess }: { onSuccess: () => void }) {
                   step={300}
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                  className="input-base w-full min-w-0"
+                  className="input-base w-full max-w-[10.5rem] min-w-0"
                 />
               </div>
               <div className="min-w-0 space-y-1.5">
@@ -181,7 +181,7 @@ export function NewRequestScreen({ onSuccess }: { onSuccess: () => void }) {
                   step={300}
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
-                  className="input-base w-full min-w-0"
+                  className="input-base w-full max-w-[10.5rem] min-w-0"
                 />
               </div>
             </div>

@@ -340,7 +340,7 @@ export function StaffRequestModal({
                     step={300}
                     value={editStartTime}
                     onChange={(e) => setEditStartTime(e.target.value)}
-                    className="input-base w-full min-w-0"
+                    className="input-base w-full max-w-[10.5rem] min-w-0"
                   />
                 </div>
                 <div className="min-w-0 space-y-1.5">
@@ -350,7 +350,7 @@ export function StaffRequestModal({
                     step={300}
                     value={editEndTime}
                     onChange={(e) => setEditEndTime(e.target.value)}
-                    className="input-base w-full min-w-0"
+                    className="input-base w-full max-w-[10.5rem] min-w-0"
                   />
                 </div>
               </div>

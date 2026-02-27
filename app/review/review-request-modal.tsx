@@ -348,11 +348,11 @@ export function ReviewRequestModal({
                       <div className="grid grid-cols-2 gap-3">
                         <div className="min-w-0 space-y-1.5">
                           <label className="text-xs font-medium text-muted-foreground">開始時刻</label>
-                          <input type="time" step={300} value={approvedStart} onChange={(e) => setApprovedStart(e.target.value)} className="input-base w-full min-w-0 md:text-sm" />
+                          <input type="time" step={300} value={approvedStart} onChange={(e) => setApprovedStart(e.target.value)} className="input-base w-full max-w-[10.5rem] min-w-0 md:text-sm" />
                         </div>
                         <div className="min-w-0 space-y-1.5">
                           <label className="text-xs font-medium text-muted-foreground">終了時刻</label>
-                          <input type="time" step={300} value={approvedEnd} onChange={(e) => setApprovedEnd(e.target.value)} className="input-base w-full min-w-0 md:text-sm" />
+                          <input type="time" step={300} value={approvedEnd} onChange={(e) => setApprovedEnd(e.target.value)} className="input-base w-full max-w-[10.5rem] min-w-0 md:text-sm" />
                         </div>
                       </div>
                       {fixDurationError && <p className="text-xs font-medium text-[var(--status-rejected)]">{fixDurationError}</p>}
@@ -543,11 +543,11 @@ export function ReviewRequestModal({
                     <div className="grid grid-cols-2 gap-3">
                       <div className="min-w-0 space-y-1.5">
                         <label className="text-xs font-medium text-muted-foreground">開始時刻</label>
-                        <input type="time" step={300} value={approvedStart} onChange={(e) => setApprovedStart(e.target.value)} className="input-base w-full min-w-0 md:text-sm" />
+                        <input type="time" step={300} value={approvedStart} onChange={(e) => setApprovedStart(e.target.value)} className="input-base w-full max-w-[10.5rem] min-w-0 md:text-sm" />
                       </div>
                       <div className="min-w-0 space-y-1.5">
                         <label className="text-xs font-medium text-muted-foreground">終了時刻</label>
-                        <input type="time" step={300} value={approvedEnd} onChange={(e) => setApprovedEnd(e.target.value)} className="input-base w-full min-w-0 md:text-sm" />
+                        <input type="time" step={300} value={approvedEnd} onChange={(e) => setApprovedEnd(e.target.value)} className="input-base w-full max-w-[10.5rem] min-w-0 md:text-sm" />
                       </div>
                     </div>
                     {fixDurationError && <p className="text-xs font-medium text-[var(--status-rejected)]">{fixDurationError}</p>}
